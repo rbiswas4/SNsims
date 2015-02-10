@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
+"""
+This is a wrapper class for `~sncosmo.Model` adding attributes and
+functionality, perhaps at the cost of flexibility of use, if appropriate for
+a particular project
+"""
 import sncosmo
 import numpy as np
-import lsst.sims.catUtils.baseCatalogModels as bcm
-from lsst.sims.catalogs.generation.db import DBObject
 from cStringIO import StringIO
 import sys
 
