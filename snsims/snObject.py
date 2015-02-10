@@ -10,17 +10,38 @@ import numpy as np
 from cStringIO import StringIO
 import sys
 
-class SNIa (object) :
+class SNObject(object) :
+    '''
+    Implementation of a SN with certain properties
+    
+    ra :
 
-    def __init__(self, id, ra, dec, z, mass, modelname):
+    dec :
+
+    snmodelsoure
+
+    dusttype
+
+    parameter distribution
+
+    rate
+
+
+
+    '''
+    def __init__(self, id, ra, dec, sourcemodel='salt2', hostdust, mwdust):
+
         self.id = id
+        _snid = self.id
         self.ra = ra
         self.dec = dec 
-        self._z = z  
-        self.mass = mass
-        self.modelname = modelname
-        _snid = self.id
-        np.random.seed(_snid)
+        self.sourcemodel = sourcemodel
+
+        Model.__init__(self, source=sourcemodel,
+                       effects=[hostdust, mwdust],
+                       effect_names=['host', 'mw'],
+                       effect_frames=['rest', 'obs'])
+
         
     @property 
     def snid(self) :
@@ -56,18 +77,6 @@ class SNIa (object) :
     def dictifySALTparams():
         return 0 
 
-if __name__ == "__main__":
-
-
-    print sncosmo.__file__
-    print SNIa.__class__
-
-    galDB =  DBObject.from_objid ('galaxyBase')
-    catalogIterator = galDB.query_columns(colnames=['id','redshift', 'ra', 'dec', 
-                                                   'mass_stellar'],
-                                          constraint='redshift between 0.01 and 0.1')
-
-    dtype = None
     for chunk in catalogIterator:
         if dtype is None:
             dtype = chunk.dtype
