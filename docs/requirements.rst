@@ -16,6 +16,9 @@ A list of possible types of SN Model issues in simulations we may want to suppor
 1. Volumetric SN simulation: Basic inputs: number of SN per comoving unit volume, per rest frame time as a function of redsfhift, redshift dependent distributions of model parameters, observational parameters. 
 2.  Based on a galaxy catalog: A set of galaxies with properties at different redshifts. Rules about SN forming in galaxies, and/or a rate of SN as in volumetric  simulations.
 3. Given a set of SN (perhapse simulated along the lines of (1.)), associate galaxies to the SN using a set of rules.
+4. Simulate SNe at specific redshift(s).
+5. Simulate SNe without noise realization.
+6. Only simulate "vanilla" supernovae, i.e. an average SN Ia with no Galactic or galactic dust extinction.
 
 Other use cases would be interesting to learn about. It is not entirely clear that having both (2.) and (3.) are essential. Two applications that may requre having each of these are 
 - (For 3): Imagine you already have a set of SNIa from some survey, and you want a distribution of galaxies consistent with the SNIa you already have and a set of rules.
