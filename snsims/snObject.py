@@ -29,7 +29,7 @@ class SNObject(object) :
 
 
     '''
-    def __init__(self, id, ra, dec, sourcemodel='salt2', hostdust, mwdust):
+    def __init__(self, id, ra, dec, sourcemodel='salt2'):
 
         self.id = id
         _snid = self.id
@@ -62,7 +62,9 @@ class SNObject(object) :
 
     mabs = np.random.normal(-19.3, 0.3)
     if self.modelname == "SALT2exact":
-        model = sncosmo.Model(source = 'salt2')
+        model = sncosmo.Model(source = 'salt2', effects=[dust, dust])
+    elif self.modelname =='SALT2-extended':
+        model = sncosmo.Model(source = 'salt2-extended')
     else:
         raise ValueError("Don't know how to treat this supernova modelname")
 
