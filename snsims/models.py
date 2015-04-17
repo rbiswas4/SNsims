@@ -34,6 +34,8 @@ class SEDFileSource(sncosmo.models.TimeSeriesSource):
 
     Returns
     -------
+        `~sncosmo.TimeSeriesSource` instance representing the TimeSeriesSource
+        in file
     """
 
     _param_names = ['amplitude']
