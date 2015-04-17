@@ -22,28 +22,40 @@ import Sources
 
 class TypeInfo(object):
       """docstring for TypeInfo"""
-      def __init__(self, model, pdf):
+      def __init__(self, model, pdf, rate, rate_snu):
           super(TypeInfo, self).__init__()
           self.model = model
-          self._pdf=pdf
+          self.pdf=pdf
+          self.rate = rate
+          self.rate_snu = rate_snu
+
 
 class TSSUniverse (object):
 
     def __init__(self, start_mjd, end_mjd, seed):
-        self._types=types  = [ 'SN II-pec','SN IIL','SN IIL/P', 'SN IIP', \
-            'SN IIn', 'SN Ia', 'SN Ib', 'SN Ib/c', 'SN Ic']
+        # self._types=types  = [ 'SN II-pec','SN IIL','SN IIL/P', 'SN IIP', \
+        #     'SN IIn', 'SN Ib', 'SN Ib/c', 'SN Ic']
+        self.types=types  = [ 'SN IIL', 'SN IIP','SN Ib', 'SN Ib/c', 'SN Ic']
 
-        self._start_mjd = start_mjd
-        self._end_mjd = end_mjd
-        self._seed = seed
+        self.start_mjd = start_mjd
+        self.end_mjd = end_mjd
+        # self.seed = seed
 
         self.typeinfo=dict()
-        for t in self._types:
+        for t in self.types:
             self.typeinfo[t]=TypeInfo(Sources.registry_sources_as_models(t,
-                subclassName="sncosmo.TimeSeriesSource"), np.random.normal(-19.3, 0.3))
+                subclassName="sncosmo.TimeSeriesSource"), np.random.normal(-19.3, 0.3),
+                1,1e-2/len(self.types))
 
-    def sneByGalaxies(self,galaxies):
-        #for each type determine wehther there is a 
+    def sneByGalaxy(self,galaxy):
+        np.random.seed(seed=galaxy.seed)
+        #for each type determine whether there is a SN
+        for t in self.types:
+            info = self.typeinfo[t]
+            mn = info.rate_snu * (self.end_mjd-self.start_mjd)/(1+galaxy.z)
+            ans=np.random.poisson(mn)
+            for i in xrange(ans):
+                pass
         pass
 
     def sneBySNType(self,sntype):
@@ -82,6 +94,15 @@ class TSSUniverse (object):
 
         return np.array([t0, x0, x1, c])
 
+class Galaxy(object):
+    """docstring for Galaxy"""
+    def __init__(self, z, seed):
+        super(Galaxy, self).__init__()
+        self.z = z
+        self.seed = seed
 
 if __name__ == "__main__":
-    dum =  TSSUniverse(0,365.25*10,0)
+    dum =  TSSUniverse(0.,10,0.)
+    gal = Galaxy(0.5,0)
+    dum.sneByGalaxy(gal)
+
