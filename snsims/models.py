@@ -3,9 +3,10 @@
 import sncosmo.models
 import numpy
 
+
 class SEDFileSource(sncosmo.models.TimeSeriesSource):
     """A TimeSeriesSource stored in a 3-column ASCII file format, for PHASE,
-    LAMBDA, and F_LAMBDA.  The hash symbol # is a commont line.
+    LAMBDA, and F_LAMBDA.  The hash symbol # is a comment line.
 
     The spectral flux density of this model is given by
 
@@ -30,16 +31,18 @@ class SEDFileSource(sncosmo.models.TimeSeriesSource):
         to the flux at the minimum phase (``flux[0, :]`` in the input array).
     version : str, optional
         Version of the model. Default is `None`.
+
+    Returns
+    -------
     """
 
     _param_names = ['amplitude']
     param_names_latex = ['A']
 
     def __init__(self, filename, zero_before=False, version=None):
-        phase, wave, flux =numpy.loadtxt(filename,unpack=True)
+        phase, wave, flux = numpy.loadtxt(filename, unpack=True)
 
         # Convert 3 column format to that expected by TimeSeriesSource
-
         phase_u = numpy.unique(phase)
         wave_u = numpy.unique(wave)
 
@@ -49,17 +52,18 @@ class SEDFileSource(sncosmo.models.TimeSeriesSource):
         if lenp*lenw != len(flux):
             raise TypeError('File is not a TimeSeriesSource')
 
-        i = numpy.zeros(len(flux),dtype='int')
-        j = numpy.zeros(len(flux),dtype='int')
+        i = numpy.zeros(len(flux), dtype='int')
+        j = numpy.zeros(len(flux), dtype='int')
         for index, p in enumerate(phase_u):
-            i[phase == p]=index
+            i[phase == p] = index
         for index, w in enumerate(wave_u):
-            j[wave == w]=index
+            j[wave == w] = index
 
         flux = flux[i*lenw+j]
-        flux = numpy.reshape(flux,(lenp,lenw))
+        flux = numpy.reshape(flux, (lenp, lenw))
         super(SEDFileSource, self).__init__(phase_u, wave_u, flux,
-            zero_before=False, name=filename, version=None)
+                                            zero_before=False,
+                                            name=filename, version=None)
 
 # filename = '/Users/akim/project/SNDATA_ROOT/snsed/NON1A/SDSS-019323.SED'
 
@@ -67,8 +71,8 @@ class SEDFileSource(sncosmo.models.TimeSeriesSource):
 
 sn = sncosmo.Model(source='snana-2007nc')
 print sn.param_names
-wefwe
+# wefwe
 import matplotlib.pyplot as plt
-plt.plot(data._wave,data.flux(0,data._wave))
-plt.plot(sn.source._wave,sn.flux(0,sn.source._wave)*0.95)
+plt.plot(data._wave, data.flux(0, data._wave))
+plt.plot(sn.source._wave, sn.flux(0, sn.source._wave)*0.95)
 plt.show()
