@@ -67,14 +67,16 @@ class SEDFileSource(sncosmo.models.TimeSeriesSource):
                                             zero_before=False,
                                             name=filename, version=None)
 
-# filename = '/Users/akim/project/SNDATA_ROOT/snsed/NON1A/SDSS-019323.SED'
 
-# data = SEDFileSource(filename)
-
-sn = sncosmo.Model(source='snana-2007nc')
-print sn.param_names
-# wefwe
-import matplotlib.pyplot as plt
-plt.plot(data._wave, data.flux(0, data._wave))
-plt.plot(sn.source._wave, sn.flux(0, sn.source._wave)*0.95)
-plt.show()
+if __name__ == '__main__':
+    # filename = '/Users/akim/project/SNDATA_ROOT/snsed/NON1A/SDSS-019323.SED'
+    
+    # data = SEDFileSource(filename)
+    
+    sn = sncosmo.Model(source='snana-2007nc')
+    print sn.param_names
+    # wefwe
+    import matplotlib.pyplot as plt
+    plt.plot(data._wave, data.flux(0, data._wave))
+    plt.plot(sn.source._wave, sn.flux(0, sn.source._wave)*0.95)
+    plt.show()
