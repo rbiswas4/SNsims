@@ -14,6 +14,7 @@ In practice the class is specified by the following attributes and methods:
 """
 import sncosmo
 import numpy as np
+import Sources
 
 
 class SNUniverse (object):
@@ -21,6 +22,26 @@ class SNUniverse (object):
     def __init__(self):
         self.snIaModel = sncosmo.Model(source="salt2-extended", effects=[sncosmo.CCM89Dust()], effect_names=['mw'],
                 effect_frames=['obs'])
+        self.snIbModels = Sources.registry_sources_as_models('SN Ib',
+            subclassName="sncosmo.TimeSeriesSource")
+        self.snIcModels = Sources.registry_sources_as_models('SN Ic',
+            subclassName="sncosmo.TimeSeriesSource")
+        self.snIbcModels = Sources.registry_sources_as_models('SN Ib/c',
+            subclassName="sncosmo.TimeSeriesSource")
+        self.snIILModels = Sources.registry_sources_as_models('SN IIL',
+            subclassName="sncosmo.TimeSeriesSource")
+        self.snIIPModels = Sources.registry_sources_as_models('SN IIP',
+            subclassName="sncosmo.TimeSeriesSource")
+        self.snIILPModels = Sources.registry_sources_as_models('SN IIL/P',
+            subclassName="sncosmo.TimeSeriesSource")
+        self.snIInModels = Sources.registry_sources_as_models('SN IIn',
+            subclassName="sncosmo.TimeSeriesSource")
+        self.snIIpecModels = Sources.registry_sources_as_models('SN II-pec',
+            subclassName="sncosmo.TimeSeriesSource")
+
+        
+
+
         self._seed = None
         self._z = None
 
