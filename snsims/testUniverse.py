@@ -184,10 +184,10 @@ class SNGenerator(object):
 Generate the supernovae for the galaxies
 """
 
-# sne= SNGenerator.sneInGalaxies(gals)
-# print len(sne)  
-# for a,b in sne:
-#     print a.source.name,b
+sne= SNGenerator.sneInGalaxies(gals)
+print len(sne)  
+for a,b in sne:
+    print a.source.name,b
 
 
 """
