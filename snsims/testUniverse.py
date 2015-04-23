@@ -16,321 +16,92 @@ for knowing how supernovae explide in them.
 """
 class Galaxy(object):
     """docstring for Galaxy"""
-    def __init__(self, z, ra,dec,size, snrule, seed):
+    def __init__(self, z, ra,dec,size, snrules, seed):
         self.seed = seed
         self.z = z
         self.ra=ra
         self.dec=dec
         self.size = size
-        self.snrule=snrule
+        self.snrules=snrules
 
 class Universe(object):
-    def __init__(self, cosmology, snrule, seed):
+    def __init__(self, cosmology, snrules, seed):
         self.cosmology = cosmology
         self.seed = seed
-        self.snrule = snrule
+        self.snrules = snrules
 
 """
 The objective of this code is generate a set of supernovae that occur in a simulation.
 The set is dercribed by a list of ntuples containing the model and its model parameters.
-"""
+Reproducibility is a requirement: given a universe instance, we want to retrieve the same supernovae
+independent of how the the specfic dates and solid angle used in a query. 
 
-"""
-sncosmo has different models for supernovae.  Each one can have its own rules
+The model is a description of the astronomical source, its location, underlying source, and
+foregrounds (dust).  sncosmo has different sources for supernovae.  Each one can have its own rules
 for how they populate the universe, i.e. the pdf of their model parameters.
-This class contain those rules.  The machine that generates supernovae expects and
-knows how to use this class
-"""
-
-# class ModelRules(object):
-#       """docstring for ModelRules"""
-#       def __init__(self, model, modelpdf, nsne, t0, z, coords):
-#           self.model = model            # sncosmo model
-#           self.modelpdf=modelpdf        # realization of source parameters 
-#           self.nsne = nsne              # realization of number of supernovae
-#           self.t0=t0                    # realization of date of explosion
-#           self.z = z                    # realization of redshift
-#           self.coords = coords          # realization of ra and dec
-
-"""
-There are two ways we anticipate realizing supernovae.
+In addition, the realization of supernovae depends on if the simulation is galaxy- or
+universe-based:
 
 1. Given a galaxy what is the occurance of supernovae.
 2. Given a universe what is the occurance of supernovae.
 
-The rules of realization of model parameters are different depending on
-whether the generation is galaxy or universe based.
-"""
+The generation of supernovae through galaxies is based on rates in SNU (per galaxy) units and coordinates
+based relative to the galaxy.  The generation of the supernovae is based on dN/dz/dOmega (e.g. per
+Mpc^3) and is not tied to galaxies.  I do not see how to make generated supernovae in a 
+single universe instantiation be identical in galaxy- and universe-based realizations.  Therefore,
+these two modes of generation are distict.
 
-""" 
-First consider galaxy-based generation.  The rules for the occurance of supernovae
-are governed by galaxy propreties.  So for each galaxy give a description of what
-things explode inside of it.
+Each galaxy/universe must know how supernovae occur within it; the different models and for each
+model the realization of objects of that model type.  Galaxy.snrules and Universe.snrules are the
+object variables that contain this information, and is a list of realization rules for 
+different model/generation conditions.  Each realization rule is an object.
 
-This container contains the information needed for specifying galaxy-based
-SN generation.
+Each realization rule is an object.  In the instantiation presented here, it is an object of
+type ModelRealizer.  It is not properly designed but represents a sketch of a potential direction
+for a design that is extensible.  The class has some salient features:
 
-This class is not meant to be reused, just an example here, though further
-design could make it useful for other uses.
-"""
+    - It contains a number of methods that realize specific kinds of model parameters.  Many models
+    share common parameters and parameter pdfs.  This class therefore offers ready-implemented methods
+    that can be of use in making rules for a particular model.
 
-# class GalaxyRules(object):
-#     """docstring for GalaxySetup"""
-#     def __init__(self):
-        
-#         self.start_mjd= 0
-#         self.end_mjd=10*365.25
+    - It contains two methods getSNe_universe and getSNe_galaxies. Generically, there are model
+    parameters and source parameters. The model parameters for universe and galaxy-based simulations are
+    different and hence get their own method.  However, the pattern is independent of source.
 
-#         self.types= ['SN IIL', 'SN IIP','SN Ib', 'SN Ib/c', 'SN Ic']
-#         self.nmodels = 0
-#         for t in self.types:
-#             self.nmodels += len(Sources.registry_sources_as_models(t, subclassName="sncosmo.TimeSeriesSource"))
+        - Realize the number of supernovae
+        - Realize the angular coordinates
+        - Realize the date (of explosion/maximum)
+        - Realize the redshift
+        - Realize the foregrounds (not implemented)
+        - Realize the source parameters
 
-#         self.rate = 0.05/365.25/self.nmodels # 2 per century distributed over all self.types
+    - It splits the universe into slices in space and time.  The random realization seeds are
+    specified for each slice.  Queries generate SNe only for the relevent slices.  This is how
+    consistent SNe are realized independent of query.  It is similar to Rahul's design except that
+    the number of objects per slice is realized from a Poisson distribution, and as such the
+    slices can be made small.  The implemented spatial slices are via ra, however I think eventually
+    dividing the sky by healpix would be better.
 
-#     def nsne(self,galaxy):
-#         return np.random.poisson(self.rate * (self.end_mjd-self.start_mjd)/(1+galaxy.z))
+    - getters for commonly used models can be provided.  For example one for SALT2.
 
-#     def t0(self):
-#         return (np.random.uniform, {'low':self.start_mjd, 'high':self.end_mjd})
-
-#     def z(self, galaxy):
-#         return galaxy.z
-
-#     def coords_gal(self, galaxy):
-#         theta_i = 90-np.random.exponential(scale=galaxy.size)
-#         phi_i = np.random.uniform(low = 0, high=1)*360.
-#         # need to work out coordinates particularly unit conventions
-#         return astropy.modeling.rotations.RotateNative2Celestial.evaluate(phi_i,theta_i,galaxy.ra,galaxy.dec,0)
-
-#     def modelpdf(self):
-#         return (np.random.normal,{'loc':-19.3,'scale':0.3})
-
-#     #For all sncosmo model types, make an associated ModelRules
-#     def snRules(self):
-#         ## In this simple example all SN types have the same rules for generation
-#         sneInAGalaxy = []
-#         for t in self.types:
-#             for model in Sources.registry_sources_as_models(t, subclassName="sncosmo.TimeSeriesSource"):
-#                 sneInAGalaxy.append(
-#                     ModelRules(model, self.modelpdf, self.nsne, self.t0, self.z, self.coords_gal))
-#         return sneInAGalaxy
-
+    - units conventions
+        - angles (radians)
+        - time (days)
 
 """
-Now when we make a galaxy we specify rules for the occurance of the SN types.
-Here we assume SNe go off in all galaxies the same way.
-"""
 
-# gals = []
-# rules = GalaxyRules() # only one of these assuming all galaxies have the same properties
-
-# for i in xrange(1000):
-#     gals.append(Galaxy(0.5, 0, 0, 2/3600.,rules.snRules(),i))
-
-"""
-Introduce a class that contains the different ways that a SN can be generated.
-"""
-
-# class SNGenerator(object):
-
-#     # a vectorized version of this will improve performance
-#     @staticmethod
-#     def sneInGalaxies(galaxies):
-#         out = []
-#         for  galaxy in galaxies:
-#             np.random.seed(seed=galaxy.seed)
-#             for info in galaxy.snrule:
-#                 #for each type determine whether there is a SN
-#                 nsn=info.nsne(galaxy)
-#                 for i in xrange(nsn):
-#                     # galaxy resdshift is first parameter
-#                     pars = [info.z(galaxy)]
-
-#                     pars.extend(info.coords(galaxy))
-
-#                     # date of explosion is second parameter
-#                     pars.append(info.t0()[0](**info.t0()[1]))
-
-#                     # parameters of the target
-#                     pars.append(info.modelpdf()[0](**info.modelpdf()[1]))
-
-#                     out.append((info.model,pars))
-#         return out
-
-#     @staticmethod
-#     def sneInUniverse(universe):
-#         out=[]
-#         np.random.seed(seed=universe.seed)
-#         snRule = universe.snrule
-#         for info in snRule:
-#             #for each type determine whether there is a SN
-#             nsn=info.nsne(universe)
-#             for i in xrange(nsn):
-#                 # galaxy resdshift is first parameter
-#                 pars = [info.z(universe)]
-
-#                 pars.extend(info.coords())
-
-#                 # date of explosion is second parameter
-#                 pars.append(info.t0()[0](**info.t0()[1]))
-
-#                 # parameters of the target
-#                 pars.append(info.modelpdf()[0](**info.modelpdf()[1]))
-#                 print pars
-#                 out.append((info.model,pars))
-
-"""
-Generate the supernovae for the galaxies
-"""
-
-# sne= SNGenerator.sneInGalaxies(gals)
-# print len(sne)  
-# for a,b in sne:
-#     print a.source.name,b
-
-
-"""
-The alternative is to generate supernovae in a universe not directly associated with a galaxy.
-Then the setup different models is a bit different.
-"""
-
-# class UniverseRules(object):
-#     """docstring for GalaxySetup"""
-#     def __init__(self):
-
-#         self.zmin=0.03
-#         self.zmax =1.2
-
-#         self.start_mjd= 0
-#         self.end_mjd=1*365.25
-
-#         #although outputs are in degrees inputs in radians
-#         self.rarange=np.array([10,20])*np.pi/180
-#         self.decrange =  np.array([10,20])*np.pi/180
-
-#         # self.solidangle=self.solidAngle()
-
-#         self.types= ['SN IIL', 'SN IIP','SN Ib', 'SN Ib/c', 'SN Ic']
-#         self.nmodels = 0
-#         for t in self.types:
-#             self.nmodels += len(Sources.registry_sources_as_models(t, subclassName="sncosmo.TimeSeriesSource"))
-
-#         self.rate = 0.25e-4/self.nmodels # per Mpc/yrself.
-
-#         self._znorm=dict()
-
-#         # variables that control the realization of supernovae into time and spatial slices
-#         # to allow efficient reproducable SN retrieval for the same universe 
-#         self._tbin = 10. // years
-#         self._rabin = np.pi/8.
-
-#     # def solidAngle(self):
-#     #     return (np.cos(np.pi/2-self.decrange[1])-
-#     #         np.cos(np.pi/2-self.decrange[0]))*(self.rarange[1]-self.rarange[0])
-
-    
-#     def _nsnePerSlice(self,universe,tindex,raindex):
-#         random_index = 0
-#         #the reproducible seed that controls generation
-#         numpy.random.RandomState.seed([universe.seed,tindex,raindex,random_index])
-#         return np.random.poisson(self.rate*self._rabin/2/np.pi* self._tbin*
-#             self.znorm(universe.cosmology))
-
-#     def _t0PerSlice(self, universe,tindex raindex):
-#         random_index=1
-#         numpy.random.RandomState.seed([universe.seed,tindex,raindex,random_index])
-#         return (np.random.uniform, {'low':tindex*self._tbin, 'high':self.(tindex+1)*self._tbin})
-
-#     def _zPerSlice(self, universe,tindex raindex):
-#         random_index=2
-#         numpy.random.RandomState.seed([universe.seed,tindex,raindex,random_index])
-#         ans = np.random.uniform(low = 0, high=1)
-#         ans = scipy.optimize.newton(lambda zp: scipy.integrate.quad(lambda z: 
-#             universe.cosmology.differential_comoving_volume(z).value/(1+z),self.zmin,zp)[0]/self.znorm(universe.cosmology) - ans,0.5)
-#         return ans
-
-#     def _coordsPerSlice(self, universe,tindex raindex):
-#         random_index=3
-#         numpy.random.RandomState.seed([universe.seed,tindex,raindex,random_index])
-#         phi = np.random.uniform(low = -90, high = 90 )
-#         theta = np.arccos(np.random.uniform(low = raindex*self._rabin,
-#             high=(raindex+1)*self._rabin))*180/np.pi
-#         return (theta,phi)
-
-#     def _getSliceIndeces(self):
-#         tindeces = numpy.arange(int(self.start_mjd/self._tbin/365.25),int(self.end_mjd/self._tbin/365.25),
-#             self._tbin,dtype='int')
-#         raindeces = numpy.arange(int(self.rarange[0]/self._rabin),int(self.rarange[1]/self._rabin),
-#             self._rabin,dtype='int')
-#         return tindeces,raindeces
-
-#     def getSNe(self, universe):
-#         out=[]
-#         for tindex in tindeces:
-#             for raindex in raindeces:
-#                 pars = [info.z(universe)]
-
-#                 pars.extend(info.coords())
-
-#                 # date of explosion is second parameter
-#                 pars.append(info.t0()[0](**info.t0()[1]))
-
-#                 # parameters of the target
-#                 pars.append(info.modelpdf()[0](**info.modelpdf()[1]))
-#                 print pars
-#                 out.append((info.model,pars))
-
-
-#     def nsne(self, universe):
-#         return np.random.poisson(self.rate*self.solidangle/4/np.pi* (self.end_mjd-self.start_mjd)*
-#             self.znorm(universe.cosmology))
-
-#     def t0(self, universe):
-#         return (np.random.uniform, {'low':self.start_mjd, 'high':self.end_mjd})
-
-#     def znorm(self,cosmology):
-#         if cosmology not in self._znorm:
-#             self._znorm[cosmology] = scipy.integrate.quad(
-#                 lambda z: cosmology.differential_comoving_volume(z).value/(1+z),self.zmin,self.zmax)[0]
-#         return self._znorm[cosmology]
-
-#     def z(self,universe):
-#         ans = np.random.uniform(low = 0, high=1)
-#         ans = scipy.optimize.newton(lambda zp: scipy.integrate.quad(lambda z: 
-#             universe.cosmology.differential_comoving_volume(z).value/(1+z),self.zmin,zp)[0]/self.znorm(universe.cosmology) - ans,0.5)
-#         return ans
-
-#     def coords(self):
-#         phi = np.random.uniform(low = self.decrange[0], high=self.decrange[1])*180/np.pi
-#         theta = np.arccos(np.random.uniform(low = self.rarange[0], high=self.rarange[1]))*180/np.pi
-#         return (theta,phi)
-
-#     def modelpdf(self):
-#         return (np.random.normal,{'loc':-19.3,'scale':0.3})
-
-#     #For all sncosmo model types, make an associated ModelRules
-#     def snRules(self):
-#         ## In this simple example all sne have the same properties
-#         sneInAUniverse = []
-#         for t in self.types:
-#             for model in Sources.registry_sources_as_models(t, subclassName="sncosmo.TimeSeriesSource"):
-#                 sneInAUniverse.append(
-#                     ModelRules(model, self.modelpdf, self.nsne, self.t0, self.z,
-#                     self.coords))
-#         return sneInAUniverse
 
 class ModelRealizer(object):
     """docstring for ModelRealizerForUniverse"""
     def __init__(self, model):
         super(ModelRealizer, self).__init__()
         self.model = model
-        self.rate = 0.25e-4/10/365.25 # per Mpc/yr
+        self.rate_vol = 0.25e-4/20/365.25 # per Mpc/yr
+        self.rate_snu = 0.05/365.25/20 # 2 per century distributed over all self.types
         self._znorm=dict()
 
         self.zmin=0.03
         self.zmax =1.2
-
 
         #model mean and sigma magnitude
         self.M0=-19.3
@@ -342,17 +113,26 @@ class ModelRealizer(object):
         self._rabin = np.pi/64.
 
         self._rs  = np.random.RandomState()
-        
-    def _nsnePerSlice(self,universe,tindex,raindex):
+
+    def _nsnePerSlice_universe(self,universe,tindex,raindex):
         random_index = 0
         #the reproducible seed that controls generation
         self._rs.seed(np.array([universe.seed,tindex,raindex,random_index]))
-        return np.random.poisson(self.rate*self._rabin/2/np.pi* self._tbin*
+        return np.random.poisson(self.rate_vol*self._rabin/2/np.pi* self._tbin*
             self.znorm(universe.cosmology))
 
-    def _t0PerSlice(self, universe,tindex, raindex, nsne=1):
+    def _nsnePerSlice_galaxy(self,galaxy,tindex):
+        random_index = 0
+        #the reproducible seed that controls generation
+        self._rs.seed(np.array([galaxy.seed,tindex,random_index]))
+        return np.random.poisson(self.rate_snu*self._tbin)
+
+    def _t0PerSlice(self, host,tindex, raindex=None, nsne=1):
         random_index=1
-        self._rs.seed(np.array([universe.seed,tindex,raindex,random_index]))
+        if raindex is None:
+            self._rs.seed(np.array([host.seed,tindex,random_index]))
+        else:
+            self._rs.seed(np.array([host.seed,tindex,raindex,random_index]))
         return np.random.uniform(size=nsne,low=tindex*self._tbin, high=(tindex+1)*self._tbin)
 
     def _zPerSlice_universe(self, universe,tindex, raindex, nsne=1, subset='default'):
@@ -371,6 +151,16 @@ class ModelRealizer(object):
             0.5,fprime=lambda z:universe.cosmology.differential_comoving_volume(z).value/(1+z)/self.znorm(universe.cosmology))
         return anss
 
+    def _zPerSlice_galaxy(self, galaxy,tindex, nsne=1, subset='default'):
+        if subset == 'default':
+            calcind = xrange(0,nsne)
+        else:
+            calcind = np.where(subset)[0]
+
+        random_index=2
+        return np.zeros(nsne)+galaxy.z
+
+
     def _coordsPerSlice_universe(self, universe,tindex, raindex, nsne=1):
         random_index=3
         self._rs.seed(np.array([universe.seed,tindex,raindex,random_index]))
@@ -381,22 +171,32 @@ class ModelRealizer(object):
 
     def _coordsPerSlice_galaxy(self, galaxy,tindex, nsne=1):
         random_index=3
-        self._rs.seed(np.array([universe.seed,tindex,random_index]))
+        self._rs.seed(np.array([galaxy.seed,tindex,random_index]))
         theta_i = 90-np.random.exponential(scale=galaxy.size)
         phi_i = np.random.uniform(low = 0, high=1)*360.
         # need to work out coordinates particularly unit conventions
-        return np.pi/180*astropy.modeling.rotations.RotateNative2Celestial.evaluate(phi_i,theta_i,galaxy.ra,galaxy.dec,0)
+        ans=astropy.modeling.rotations.RotateNative2Celestial.evaluate(phi_i,theta_i,galaxy.ra*180/np.pi,galaxy.dec*180/np.pi,0)
+        return (np.array([ans[0]*np.pi/180]),np.array([ans[1]*np.pi/180]))
 
-    def _modelParametersPerSlice(self, universe,tindex, raindex, nsne=1, subset='default'):
+    def _modelParametersPerSlice(self, host,tindex, raindex=None, nsne=1, subset='default'):
+        random_index=4
+        if raindex is None:
+            self._rs.seed(np.array([host.seed,tindex,random_index]))
+        else:
+            self._rs.seed(np.array([host.seed,tindex,raindex,random_index]))
+
         if subset == 'default':
             calcind = xrange(0,nsne)
         else:
             calcind = np.where(subset)[0]
-        random_index=4
-        self._rs.seed(np.array([universe.seed,tindex,raindex,random_index]))
         ans=np.zeros(nsne)
         ans[calcind] = np.random.normal(size=nsne,loc=self.M0,scale=self.M0_sig)[calcind]
         return ans
+
+    def _dustPerSlice(self,universe,tindex,rindex):
+        random_index=5
+        self._rs.seed(np.array([universe.seed,tindex,raindex,random_index]))
+        raise NotImplementedError()
 
     def _getSliceIndeces(self, trange, rarange=None):
         tmin = int(trange[0]/self._tbin)
@@ -420,14 +220,14 @@ class ModelRealizer(object):
     def getSNe_universe(self, universe, trange, rarange, decrange):
         tindeces, raindeces = self._getSliceIndeces(trange, rarange)
         allzs=[]
-        allcoords=[]
+        allcoords=[[],[]]
         allt0=[]
         allmp=[]
 
-        #this can be parallelized
+        #this series of loops can be parallelized
         for tindex in tindeces:
             for raindex in raindeces:
-                nsne = self._nsnePerSlice(universe,tindex,raindex)
+                nsne = self._nsnePerSlice_universe(universe,tindex,raindex)
 
                 if nsne != 0:
                     coords = self._coordsPerSlice_universe(universe,tindex,raindex,nsne=nsne)
@@ -440,73 +240,56 @@ class ModelRealizer(object):
                     inrange = np.logical_and(inrange,coords[1] < decrange[0])
                     inrange = np.logical_and(inrange,coords[1] < decrange[1])
 
-                    zs = self._zPerSlice_universe(universe,tindex,raindex,nsne=nsne,subset=inrange)
-                    mp = self._modelParametersPerSlice(universe,tindex,raindex,nsne=nsne, subset=inrange)
+                    if inrange.sum() > 0:
+                        zs = self._zPerSlice_universe(universe,tindex,raindex,nsne=nsne,subset=inrange)
+                        mp = self._modelParametersPerSlice(universe,tindex,raindex,nsne=nsne, subset=inrange)
 
-                    allzs.append(zs[inrange])
-                    allcoords.append((coords[0][inrange], coords[1][inrange]))
-                    allt0.append(t0[inrange])
-                    allmp.append(mp[inrange])
+                        allzs.extend(zs[inrange])
+                        allcoords[0].extend(coords[0][inrange])
+                        allcoords[1].extend(coords[1][inrange])
+                        allt0.extend(t0[inrange])
+                        allmp.extend(mp[inrange])
 
+        return np.array(allzs), np.transpose(allcoords), np.array(allt0), np.array(allmp)
 
-        return allzs, allcoords, allt0, allmp
-
-def getSNe_galaxy(self, galaxy, trange, rarange, decrange):
-        tindeces, = self._getSliceIndeces(trange)
+    def getSNe_galaxy(self, galaxy, trange):
+        tindeces, raindeces = self._getSliceIndeces(trange)
         allzs=[]
-        allcoords=[]
+        allcoords=[[],[]]
         allt0=[]
         allmp=[]
 
-        #this can be parallelized
+        #this series of loops can be parallelized
+
         for tindex in tindeces:
-            for raindex in raindeces:
-                nsne = self._nsnePerSlice(universe,tindex,raindex)
-                if nsne != 0:
-                    zs = self._zPerSlice_universe(universe,tindex,raindex,nsne=nsne)
-                    coords = self._coordsPerSlice_universe(universe,tindex,raindex,nsne=nsne)
+            nsne = self._nsnePerSlice_galaxy(galaxy,tindex)
 
-                    t0 = self._t0PerSlice(universe,tindex,raindex,nsne=nsne)
+            if nsne != 0:
+                coords = self._coordsPerSlice_galaxy(galaxy,tindex,nsne=nsne)
+                t0 = self._t0PerSlice(galaxy,tindex,nsne=nsne)
 
-                    mp = self._modelParametersPerSlice(universe,tindex,raindex,nsne=nsne)
+                inrange = t0 >= trange[0]
+                inrange = np.logical_and(inrange,t0< trange[1])
 
+                if inrange.sum() > 0:
+                    zs = self._zPerSlice_galaxy(galaxy,tindex,nsne=nsne,subset=inrange)
+                    mp = self._modelParametersPerSlice(galaxy,tindex,nsne=nsne, subset=inrange)
 
-                    inrange = t0 >= trange[0]
-                    inrange = np.logical_and(inrange,t0< trange[1])
-                    inrange = np.logical_and(inrange,coords[0] < rarange[0])
-                    inrange = np.logical_and(inrange,coords[0] < rarange[1])
-                    inrange = np.logical_and(inrange,coords[1] < decrange[0])
-                    inrange = np.logical_and(inrange,coords[1] < decrange[1])
+                    allzs.extend(zs[inrange])
+                    allcoords[0].extend(coords[0][inrange])
+                    allcoords[1].extend(coords[1][inrange])
+                    allt0.extend(t0[inrange])
+                    allmp.extend(mp[inrange])
 
-                    allzs.append(zs[inrange])
-                    allcoords.append((coords[0][inrange], coords[1][inrange]))
-                    allt0.append(t0[inrange])
-                    allmp.append(mp[inrange])
-
-
-        return allzs, allcoords, allt0, allmp
-
-    # def t0(self, universe):
-    #     return (np.random.uniform, {'low':self.start_mjd, 'high':self.end_mjd})
-
-
-
-    # def z(self,universe):
-    #     ans = np.random.uniform(low = 0, high=1)
-    #     ans = scipy.optimize.newton(lambda zp: scipy.integrate.quad(lambda z: 
-    #         universe.cosmology.differential_comoving_volume(z).value/(1+z),self.zmin,zp)[0]/self.znorm(universe.cosmology) - ans,0.5)
-    #     return ans
-
-    # def coords(self):
-    #     phi = np.random.uniform(low = self.decrange[0], high=self.decrange[1])*180/np.pi
-    #     theta = np.arccos(np.random.uniform(low = self.rarange[0], high=self.rarange[1]))*180/np.pi
-    #     return (theta,phi)
-
-
+        return np.array(allzs), np.transpose(allcoords), np.array(allt0), np.array(allmp)
 
 
 """
-Given the rules for how supernovae go off un a universe, generate supernovae
+Now we can make a list of these rules for each of the models.  In the example below, I
+take all the sncosmo.TimeSeriesSource of type SN IIL, SN IIP, SN Ib, SN Ib/c, SN Ic
+that are in the sncosmo registry and create a ModelRealizer for each.  In this example
+the behavior of each is identical but in general the internal variables for each could be
+different.
 """
 
 def modelsInUniverse():
@@ -519,10 +302,33 @@ def modelsInUniverse():
     return sneInAUniverse
 
 models = modelsInUniverse()
+
+"""
+Make a universe and print out the types and the parameters for those types
+"""
+
 universe = Universe(astropy.cosmology.WMAP9, models,0)
-ans = models[0].getSNe_universe(universe,np.array([100*365.25,101.5*365.25]),np.array([10,12])*np.pi/180,
-    np.array([10,20])*np.pi/180)
+trange = np.array([100*365.25,100.5*365.25])
+rarange = np.array([10,11])*np.pi/180
+decrange = np.array([10,15])*np.pi/180
+for model in universe.snrules:
+    print model.model.source.name
+    zs,coords,t0,mp = models[0].getSNe_universe(universe,trange, rarange,decrange)
+    for a,b,c,d in zip(zs,coords,t0,mp):
+        print a,b,c,d
 
+"""
+Make some galaxies and print out the type and parameters for each
+"""
+gals = []
+for i in xrange(1000):
+    gals.append(Galaxy(0.5, 0, 0, 2/3600./180.*np.pi,models,i))
 
+for gal in gals:
+    for model in universe.snrules:
+        zs,coords,t0,mp = models[0].getSNe_galaxy(gal, trange)
+        if len(zs) !=0:
+            print gal.seed, model.model.source.name
+            for a,b,c,d in zip(zs,coords,t0,mp):
+                print a,b,c,d
 
-wefwe
