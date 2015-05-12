@@ -4,7 +4,7 @@
 import sncosmo
 import numpy as np
 import scipy
-import Sources
+import sources
 import astropy.modeling
 import astropy.cosmology
 
@@ -297,7 +297,7 @@ def modelsInUniverse():
     sneInAUniverse = []
     types= ['SN IIL', 'SN IIP','SN Ib', 'SN Ib/c', 'SN Ic']
     for t in types:
-        for model in Sources.registry_sources_as_models(t, subclassName="sncosmo.TimeSeriesSource"):
+        for model in sources.registry_sources_as_models(t, subclassName="sncosmo.TimeSeriesSource"):
             sneInAUniverse.append(ModelRealizer(model))
     return sneInAUniverse
 
