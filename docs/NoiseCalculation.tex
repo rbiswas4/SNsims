@@ -10,5 +10,20 @@ N^2 = N_0^2 + \alpha F
 \ee
 Given a source Flux, the noise has two unknown quantities $\alpha$ and $N_0$.
 Therefore, it is posible to eliminate one of these variables in terms of 
-quantities at a standard SNR.
+quantities at a standard SNR. Let us consider this standard SNR to be 5.
+Then, we have 
+\be
+\frac{F_5}{N_0^2 + \alpha F_5} = 25
+\ee
+implying we can eliminate 
+\be
+\alpha = 0.04\cdot F_5 - \left(N_0\over F_5\right)^2
+\ee
+At the linear level, the noise in the magnitude $\sigma_m$ is 
+\beqn
+\sigma_m^2 &=& \left({2.5 \over \log{(10)}}\right)^2 (N/F)^2 \\
+&\approx& \left({N_0 \over F }\right)^2 + \alpha \left({1 \over F}\right) \\
+&=& \left({N_0 \over F_5}\right)^2 \left(F_5/F\right)^2
+\eeqn
+
 \end{document}
