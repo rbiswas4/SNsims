@@ -1,0 +1,14 @@
+\documentclass{article}
+\input{preamble}
+\begin{document}
+\section{Noise Calculation}
+
+The assumption is that the noise of a point source with flux $F$ has a variance 
+ obtained by quadratically adding the variance of a background $N_0^2$ and a quantity proportional to the Poisson Noise due to the source.
+\be
+N^2 = N_0^2 + \alpha F 
+\ee
+Given a source Flux, the noise has two unknown quantities $\alpha$ and $N_0$.
+Therefore, it is posible to eliminate one of these variables in terms of 
+quantities at a standard SNR.
+\end{document}
