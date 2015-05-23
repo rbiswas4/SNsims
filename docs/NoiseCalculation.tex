@@ -17,13 +17,19 @@ Then, we have
 \ee
 implying we can eliminate 
 \be
-\alpha = 0.04\cdot F_5 - \left(N_0\over F_5\right)^2
+\alpha = F_5 \left( 0.04 - \left(N_0 \over F_5\right)^2 \right)
 \ee
 At the linear level, the noise in the magnitude $\sigma_m$ is 
 \beqn
 \sigma_m^2 &=& \left({2.5 \over \log{(10)}}\right)^2 (N/F)^2 \\
 &\approx& \left({N_0 \over F }\right)^2 + \alpha \left({1 \over F}\right) \\
-&=& \left({N_0 \over F_5}\right)^2 \left(F_5/F\right)^2
+&=& \left({N_0 \over F_5}\right)^2 \left(F_5/F\right)^2 + \left( 0.04 - ({N_0/F_5})^2\right) (F_5/F) \\
+&=& \gamma x^2 + (0.04 - \gamma) x
 \eeqn
-
+We could put back the initial missing factor $\approx 1$ to get 
+\be
+\sigma_m^2  = \left(2.5/\log{(10)}\right)^2 \left( \gamma x^2  + (0.04 - \gamma ) x \right)
+\ee
+where 
+$\gamma \equiv N_0/ F_5 $ and $x \equiv F_5/F = 10.0^{0.4(m-m_5)}$
 \end{document}
