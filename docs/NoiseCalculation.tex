@@ -1,0 +1,55 @@
+\documentclass{article}
+\input{preamble}
+\begin{document}
+\section{Noise Calculation}
+
+The assumption is that the noise of a point source with flux $F$ has a variance 
+ obtained by quadratically adding the variance of a background $N_0^2$ and a quantity proportional to the Poisson Noise due to the source.
+\be
+N^2 = N_0^2 + \alpha F 
+\ee
+Given a source Flux, the noise has two unknown quantities $\alpha$ and $N_0$.
+Therefore, it is posible to eliminate one of these variables in terms of 
+quantities at a standard SNR. Let us consider this standard SNR to be 5.
+Then, we have 
+\be
+\frac{F_5^2}{N_0^2 + \alpha F_5} = 25
+\ee
+implying we can eliminate 
+\be
+\alpha = F_5 \left( 0.04 - \left(\frac{N_0}{F_5}\right)^2 \right)
+\ee
+At the linear level, the noise in the magnitude $\sigma_m$ is 
+\beqn
+\sigma_m^2 &=& \left(\frac{2.5}{\log{(10)}}\right)^2 (N/F)^2 \\
+&\approx& \left(\frac{N_0}{F }\right)^2 + \alpha \left(\frac{1}{F}\right) \\
+&=& \left(\frac{N_0}{F_5}\right)^2 \left(F_5/F\right)^2 + \left( 0.04 - ({N_0/F_5})^2\right) (F_5/F) \\
+&=& \gamma x^2 + (0.04 - \gamma) x
+\eeqn
+We could put back the initial missing factor $\approx 1$ to get 
+\be
+\sigma_m^2  = \left(2.5/\log{(10)}\right)^2 \left( \gamma x^2  + (0.04 - \gamma ) x \right)
+\ee
+where 
+$\gamma \equiv \left( N_0/ F_5 \right)^2$ and $x \equiv F_5/F = 10.0^{0.4(m-m_5)}.$ In terms of $\gamma$ and $m_5,$ we may write the value of $\alpha$:
+\be
+\alpha = 10.0^{-0.4 m_5} ( 0.04 - \gamma)
+\ee
+We could write the Flux in terms of counts. This would be
+$$
+C_5 = \frac{\pi D^2 T_{exp}}{4 g h} F5
+$$
+Then, 
+\be
+\gamma  = \left(\frac{\pi D^2 T_{exp} N0}{4 g h C_5}\right)^2
+\ee
+% \section{Rewrite}
+% We will consider PSF photometry of a point source as described in the SNR document using the estimator 
+% \be 
+% \hat{S} = \sum w_i C_i 
+% \ee. Here, the physical signal is the Flux of an astrophysical point source in absolute units in a filter band. This means that number of counts $C$ and the variance of the estimator is 
+% \be
+% N^2 = C/g + N_0^2 
+% \ee
+% where g is the gain 
+\end{document}

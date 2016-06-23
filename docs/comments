@@ -1,0 +1,11 @@
+1. sources.load_sources_as_models: No way of adding effects like dusts
+2. Universe: If I simulate the universe with two different overlapping footprints, will the SN history in the overlapping region be consistent?
+
+Cosmetic Changes:
+---------------
+pep8 
+changed type to sntype:
+added documentation
+Changed Sources to sources
+Added setup to work
+example in examples directory to work

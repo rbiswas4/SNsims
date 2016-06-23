@@ -21,26 +21,23 @@ class SNUniverse (object):
 
     def __init__(self):
         self.snIaModel = sncosmo.Model(source="salt2-extended", effects=[sncosmo.CCM89Dust()], effect_names=['mw'],
-                effect_frames=['obs'])
+                                       effect_frames=['obs'])
         self.snIbModels = sources.registry_sources_as_models('SN Ib',
-            subclassName="sncosmo.TimeSeriesSource")
+                                                             subclassName="sncosmo.TimeSeriesSource")
         self.snIcModels = sources.registry_sources_as_models('SN Ic',
-            subclassName="sncosmo.TimeSeriesSource")
+                                                             subclassName="sncosmo.TimeSeriesSource")
         self.snIbcModels = sources.registry_sources_as_models('SN Ib/c',
-            subclassName="sncosmo.TimeSeriesSource")
+                                                              subclassName="sncosmo.TimeSeriesSource")
         self.snIILModels = sources.registry_sources_as_models('SN IIL',
-            subclassName="sncosmo.TimeSeriesSource")
+                                                              subclassName="sncosmo.TimeSeriesSource")
         self.snIIPModels = sources.registry_sources_as_models('SN IIP',
-            subclassName="sncosmo.TimeSeriesSource")
+                                                              subclassName="sncosmo.TimeSeriesSource")
         self.snIILPModels = sources.registry_sources_as_models('SN IIL/P',
-            subclassName="sncosmo.TimeSeriesSource")
+                                                               subclassName="sncosmo.TimeSeriesSource")
         self.snIInModels = sources.registry_sources_as_models('SN IIn',
-            subclassName="sncosmo.TimeSeriesSource")
+                                                              subclassName="sncosmo.TimeSeriesSource")
         self.snIIpecModels = sources.registry_sources_as_models('SN II-pec',
-            subclassName="sncosmo.TimeSeriesSource")
-
-        
-
+                                                                subclassName="sncosmo.TimeSeriesSource")
 
         self._seed = None
         self._z = None
@@ -48,27 +45,29 @@ class SNUniverse (object):
     @property
     def seed(self):
         return self._seed
+
     def reset_model(self, seed, z):
         self._seed = seed
-        self.set_z(z) 
+        self.set_z(z)
         return self.get_SNparams()
 
-    @property 
+    @property
     def z(self):
         return self._z
 
-    def set_z(self,z ):
+    def set_z(self, z):
         self._z = z
         self.snIaModel.set(z=z)
+
     @property
     def ra(self):
-        return self._ra 
+        return self._ra
 
     def get_SNparams(self):
 
-        hundredyear = 100*365.0
+        hundredyear = 100 * 365.0
         np.random.seed(self.seed)
-        t0 = np.random.uniform(-hundredyear/2.0, hundredyear/2.0)
+        t0 = np.random.uniform(-hundredyear / 2.0, hundredyear / 2.0)
         c = np.random.normal(0., 0.3)
         x1 = np.random.normal(0., 1.0)
         mabs = np.random.normal(-19.3, 0.3)
