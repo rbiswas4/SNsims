@@ -1,7 +1,7 @@
 language: C
 
 install:
-  - travis wait 25 ./continuous_integration/INSTALL_LSST_SIMS.sh lsst-sims pandas nose
+  - travis_wait 25 ./continuous_integration/INSTALL_LSST_SIMS.sh lsst-sims pandas nose
   - conda install numpydoc
   - export PATH="$HOME/miniconda/bin:$PATH"
   - source eups-setups.sh
