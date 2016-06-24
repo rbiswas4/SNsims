@@ -1,8 +1,7 @@
 language: C
 
 install:
-  - CHANNEL=http://eupsforge.net/conda/dev ./install.sh lsst-sims pandas nose
-  - conda install numpydoc
+  - travis_wait 25 ./continuous_integration/INSTALL_LSST_SIMS.sh lsst-sims pandas nose
   - export PATH="$HOME/miniconda/bin:$PATH"
   - source eups-setups.sh
   - setup lsst_sims
@@ -12,6 +11,7 @@ install:
 cache:
   directories:
   - $HOME/miniconda.tarball
+  timeout: 800
 
 # A trivial example to show that this worked
 script:
