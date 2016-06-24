@@ -5,6 +5,9 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - source eups-setups.sh
   - setup lsst_sims
+  - pip install pytest
+  - pip install future
+  - pip install pytest-cov
   - pip install python-coveralls
   - pip install coveralls
   - pip install coverage
@@ -20,8 +23,8 @@ script:
   - setup lsst_sims
   - python setup.py install 
   - py.test --ignore=snsims_previous/ --cov-report= --cov=snsims tests
-  - nosetests -v --with-coverage --cover-erase --cover-tests --cover-package=snsims --cover-inclusive --cover-html --cover-html-dir=doc/coverage
-  - nosetests --with-doctest -v -w snsims
+  # - nosetests -v --with-coverage --cover-erase --cover-tests --cover-package=snsims --cover-inclusive --cover-html --cover-html-dir=doc/coverage
+  # - nosetests --with-doctest -v -w snsims
 
 after_success:
   - coveralls
