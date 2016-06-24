@@ -19,6 +19,7 @@ script:
   - source eups-setups.sh
   - setup lsst_sims
   - python setup.py install 
+  - py.test --ignore=snsims_previous/ --cov-report= --cov=snsims tests
   - nosetests -v --with-coverage --cover-erase --cover-tests --cover-package=snsims --cover-inclusive --cover-html --cover-html-dir=doc/coverage
   - nosetests --with-doctest -v -w snsims
 
