@@ -62,6 +62,7 @@ class HealpixTiles(Tiling):
 
         inds = hp.ang2pix(nside=self.nside, theta=theta, phi=phi, nest=True)
         return inds
+
     def pointingSequenceForTile(self, tileID, allPointings, **kwargs):
         return None
                 
