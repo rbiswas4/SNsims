@@ -59,16 +59,17 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
     def tileIDSequence(self):
         pass
 
+
     @abc.abstractmethod
     def pointingSequenceForTile(self, tileID, allPointings, **kwargs):
         """
-        Return a sequence of IDs identifying the OpSim pointings (obsHistID)
-        that intersect with the tile having ID tileID.
+        Return a sequence of IDs identifying the maximal set of OpSim pointings
+        (obsHistID) that intersect with the tile having ID tileID.
 
         Parameters
         ----------
         tileID : int, or string, mandatory
-            Index for desired tile 
+            Index for desired tile (should not be for a sequence)
         allPointings : instance of {string, DBConnection, `pandas.DataFrame`}
             Information about a set of pointings we will worry about. The set
             of pointings may be in a database or a dataFrame, and different ways
@@ -79,6 +80,11 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
         Returns
         -------
         `numpy.ndarray` of obsHistIDs
+
+        .. notes: This can be a crude method returning all of the pointings in
+            allPointings if one runs in a pedantic mode later to do a more
+            careful filtering. Even in those cases, this may be helpful in
+            reducing the nimbers
         """
         pass
 
