@@ -4,4 +4,4 @@ cd ..
 git clone https://github.com/rbiswas4/OpSimSummary.git
 cd OpSimSummary
 python setup.py install --user
-cd pd
+cd $pd
