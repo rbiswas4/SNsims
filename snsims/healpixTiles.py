@@ -6,8 +6,9 @@ from __future__ import absolute_import, print_function, division
 import healpy as hp
 import numpy as np
 import opsimsummary  as oss
-
+import pandas as pd
 from .tessellations import Tiling
+from sqlalchemy import create_engine
 
 __all__ = ['HealpixTiles']
 
@@ -37,14 +38,22 @@ class HealpixTiles(Tiling):
         self.npix = hp.nside2npix(nside)
         self._tileArea = hp.nside2pixarea(nside)
         self.hpOpSim = healpixelizedOpSim
-        self.preComputedMap = preComputedMap
+        self._preComputedMap = preComputedMap
         if self.hpOpSim is None and self.preComputedMap is None:
             raise ValueError('hpOpSim and preComputedMap cannot both be None')
+        self._preComputedEngine = None
 
     @property
+    def preComputedMap(self):
+        if self._preComputedMap is not None:
+            if not self._preComputedMap.startswith('sqlite'):
+                self._preComputedMap = 'sqlite:///' + self._preComputedMap
+
+        return self._preComputedMap
+    @property
     def preComputedEngine(self):
-        engine = self.preComputedEngine
-        if engine is not None:
+        engine = self._preComputedEngine
+        if engine is None:
             engine = create_engine(self.preComputedMap, echo=False)
         return engine
 
@@ -79,9 +88,10 @@ class HealpixTiles(Tiling):
 
     def _pointingFromPrecomputedDB(self, tileID, tableName='simlib'):
 
-        tName = tableName
-        sql = 'SELECT obsHistID FROM @tName WHERE ipix == {}'.format(tileID)
-        return pd.read_sql_query(sql, con=self.preComputedEngine).values
+        sql = 'SELECT obsHistID FROM {0} WHERE ipix == {1}'\
+            .format(tableName, tileID)
+        return pd.read_sql_query(sql, con=self.preComputedEngine)\
+            .values.flatten()
 
     def _pointingFromHpOpSim(self, tileID):
         return self.hpOpSim.obsHistIdsForTile(tileID)
@@ -91,18 +101,19 @@ class HealpixTiles(Tiling):
         return self.hpOpSim.set_index('obsHistID').ix(pointing)['hids']
 
     def _tileFromPreComputedDB(self, pointing, tableName='simlib'):
-        tName = tableName
-        sql = 'SELECT ipix FROM @tName WHERE obsHistID == {}'.format(pointing)
-        return pd.read_sql_query(sql, con=self.preComputedEngine).values
+        sql = 'SELECT ipix FROM {0} WHERE obsHistID == {1}'\
+            .format(tableName, pointing)
+        return pd.read_sql_query(sql, con=self.preComputedEngine)\
+            .values.flatten()
 
     def tilesForPointing(self, pointing, alltiles=None, **kwargs):
         """
         return a maximal sequence of tile ID s for a particular OpSim pointing
         """
         if self.preComputedMap is not None:
-            return _tileFromPreComputedDB(self, pointing, tableName='simlib')
+            return self._tileFromPreComputedDB(self, pointing, tableName='simlib')
         elif self.hpOpSim is not None:
-            return _tileFromHpOpSim(self, pointing)
+            return self._tileFromHpOpSim(self, pointing)
         else:
             raise ValueError('both attributes preComputedMap and hpOpSim cannot'
                              ' be None')
@@ -114,7 +125,7 @@ class HealpixTiles(Tiling):
         if self.preComputedMap is not None:
             return self._pointingFromPrecomputedDB(tileID, tableName='simlib')
         elif self.hpOpSim is not None:
-            return _pointingFromHpOpSim(self, tileID)
+            return self._pointingFromHpOpSim(tileID)
         else:
             raise ValueError('both attributes preComputedMap and hpOpSim cannot'
                              ' be None')
