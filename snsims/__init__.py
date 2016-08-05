@@ -4,3 +4,4 @@ from .version import *
 from .tessellations import *
 from .healpixTiles import *
 from .universe import *
+from .paramDistribution import *
