@@ -5,7 +5,7 @@ from __future__ import absolute_import, print_function
 from future.utils import with_metaclass
 import abc
 
-__all__ = ['Universe', 'HomogeneousSNUniverse']
+__all__ = ['Universe', 'HomogeneousSNUniverse', 'RateDistributions']
 
 class Universe(with_metaclass(abc.ABCMeta, object)):
     """
@@ -38,11 +38,10 @@ class HomogeneousSNUniverse(with_metaclass(abc.ABCMeta, Universe)):
     def paramDistribution(self):
         pass
 
-
-class RateDistributions(with_metaclass(abc.ABCMeta, Object)):
+class RateDistributions(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
-    def zSamples(self, zbinEdges, skyFraction):
+    def zSampleSize(self, zbinEdges, skyFraction):
         """
         Given a collection of edges of redshift bins, and a skyFraction
         return a collection of expected (possibly non-integral) numbers of SN.
@@ -50,4 +49,3 @@ class RateDistributions(with_metaclass(abc.ABCMeta, Object)):
         perfectly fine to get 3.45 SN in a redshift bin.
         """
         pass
-

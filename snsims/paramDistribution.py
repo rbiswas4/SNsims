@@ -1,6 +1,11 @@
+"""
+Module with concrete implementations of functions important for sampling
+parameters
+"""
 from __future__ import absolute_import, print_function
 from .universe import RateDistributions
-from astropy.cosmology import Planck15 as cosmo
+from astropy.cosmology import Planck15
+import numpy as np
 
 
 __all__ = ['PowerLawRates']
@@ -41,14 +46,23 @@ class PowerLawRates(RateDistributions):
         res *= ((self.cosmo.h / 0.7) **3.)  
         return res
 
-    def zSampleSize(self, zbinEdges, DeltaT, skyFraction=None, fieldArea=None):
+    def zSampleSize(self, zbinEdges, DeltaT, skyFraction=None, fieldArea=None,
+                    zlower=None, zhigher=None, numBins=None):
         """
         Parameters
         ----------
-        zbinEdges : 
+        zbinEdges : `nunpy.ndarray` of edges of zbins, defaults to None
+            Should be of the form np.array([z0, z1, z2]) which will have
+            zbins (z0, z1) and (z1, z2)
         skyFraction : np.float, optional, 
         fieldArea : optional, units of degrees squared
             area of sky considered.
+        zlower : float, optional, defaults to None
+            lower edge of z range
+        zhigher : float, optional, defaults to None
+            higher edge of z range
+        numBins : int, optional, defaults to None
+           if not None, overrides zbinEdges
         """
         if fieldArea is None and skyFraction is None:
             raise ValueError('both fieldArea and skyFraction cannot be None')
@@ -57,14 +71,20 @@ class PowerLawRates(RateDistributions):
         if fieldArea is not None: 
             skyFraction = fieldArea * np.radians(1.)**2.0  / 4.0 / np.pi
 
-
+        if zbinEdges is None:
+            if any(_x is None for _x in (zlower, zhigher, numBins)):
+                raise valueError('zbinEdges or zlower, zhigher, numbins must'
+                                 'be given')
+            else:
+                zbinEdges = np.linspace(zlower, zhigher, numBins + 1)
 
         # midpoints of z bins where the rate is evaluated
         z_mids = 0.5 * (zbinEdges[1:] + zbinEdges[:-1])
-        snpervolume = self.snrate(z_mids) 
+        snpervolume = self.snRate(z_mids) 
 
         # Comoving volume of the univere in between zlower and zhigher
         vols = self.cosmo.comoving_volume(zbinEdges)
+
         # Comoving volume in each bin
         vol = vols[1:] - vols[:-1]
         vol *= skyFraction
@@ -106,4 +126,4 @@ class PowerLawRates(RateDistributions):
         # normalize the time window to rest frame time
         numSN = DeltaT * sn * vol / (1. + z_bins)
         return numSN.value# , fullvol
-    
+

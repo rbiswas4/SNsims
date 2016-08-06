@@ -6,7 +6,8 @@ from .universe import HomogeneousSNUniverse
 
 class HomogeneousSN(HomogeneousSNUniverse):
 
-    def __init__(self, surveyDuration):
+    def __init__(self, surveyDuration, rateObjects, paramDistribution):
         self.surveyDuration = surveyDuration
+        self.rateObjs = rateObject(
     
     
