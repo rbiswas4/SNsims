@@ -13,8 +13,8 @@ from .populationParamSamples import (RateDistributions,
                                      PositionSamples)
 from astropy.cosmology import Planck15
 
-
 __all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples']
+
 class SimpleSALTDist(SALT2Parameters):
     """
     Concrete Implementation of `SALT2Parameters`
