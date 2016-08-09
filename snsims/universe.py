@@ -5,7 +5,7 @@ from __future__ import absolute_import, print_function
 from future.utils import with_metaclass
 import abc
 
-__all__ = ['Universe', 'HomogeneousSNUniverse', 'RateDistributions']
+__all__ = ['Universe', 'HomogeneousSNUniverse']
 
 class Universe(with_metaclass(abc.ABCMeta, object)):
     """
@@ -31,6 +31,10 @@ class Universe(with_metaclass(abc.ABCMeta, object)):
         samples, or be generated from a random number generator. In the latter
         case, we need to instantiate it with a random state characterizing the
         simulation. This is given by the abstract property randomState
+
+        The data structure for the snParams is not defined, and can be chosen
+        appropriately in any concrete implementation. The basic requirement is
+        that the property SN works with snParams
         """
         pass
 
@@ -58,14 +62,3 @@ class HomogeneousSNUniverse(with_metaclass(abc.ABCMeta, Universe)):
     def paramDistribution(self):
         pass
 
-class RateDistributions(with_metaclass(abc.ABCMeta, object)):
-
-    @abc.abstractmethod
-    def zSampleSize(self, zbinEdges, skyFraction):
-        """
-        Given a collection of edges of redshift bins, and a skyFraction
-        return a collection of expected (possibly non-integral) numbers of SN.
-        Since this is an expected number, the number is a float and it is
-        perfectly fine to get 3.45 SN in a redshift bin.
-        """
-        pass
