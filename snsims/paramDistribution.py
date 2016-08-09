@@ -3,12 +3,106 @@ Module with concrete implementations of functions important for sampling
 parameters
 """
 from __future__ import absolute_import, print_function
-from .populationParamSamples import RateDistributions
-from astropy.cosmology import Planck15
 import numpy as np
+import pandas as pd
+import healpy as hp
+import sncosmo
+from .healpixTiles import HealpixTiles
+from .populationParamSamples import (RateDistributions,
+                                     SALT2Parameters,
+                                     PositionSamples)
+from astropy.cosmology import Planck15
 
 
-__all__ = ['PowerLawRates']
+__all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples']
+class SimpleSALTDist(SALT2Parameters):
+    """
+    Concrete Implementation of `SALT2Parameters`
+    """
+    def __init__(self, numSN, zSamples, alpha=0.11, beta=3.14, cSigma=0.1,
+                 x1Sigma=1.0, meanM=-19.3,  Mdisp=0.15, rng=None, cosmo=Planck15):
+        self.alpha = alpha
+        self.beta = beta
+        self.numSN = numSN
+        self.zSamples = zSamples
+        self.x1Sigma = x1Sigma
+        self.cSigma = cSigma
+        self._rng = rng
+        self.centralMabs = meanM
+        self.Mdisp = Mdisp
+        self._paramSamples = None
+        self.cosmo = cosmo
+
+    @property
+    def randomState(self):
+        if self._rng is None:
+            raise NotImplemented('rng must be provided')
+        return self._rng
+
+    @property
+    def paramSamples(self):
+        if self._paramSamples is None:
+            T0Vals = self.randomState.uniform(size=self.numSN)
+            cvals = self.randomState.normal(loc=0., scale=self.cSigma,
+                                            size=self.numSN)
+            x1vals = self.randomState.normal(loc=0., scale=self.x1Sigma,
+                                            size=self.numSN)
+            M = - self.alpha * x1vals - self.beta * cvals
+            Mabs = self.centralMabs + M + self.randomState.normal(loc=0., scale=self.Mdisp,
+                                               size=self.numSN)
+            x0 = np.zeros(self.numSN)
+            mB = np.zeros(self.numSN)
+            model = sncosmo.Model(source='SALT2')
+            for i, z in enumerate(self.zSamples):
+                model.set(z=z, x1=x1vals[i], c=cvals[i])
+                model.set_source_peakabsmag(Mabs[i], 'bessellB', 'ab',
+                                            cosmo=self.cosmo)
+                x0[i] = model.get('x0')
+                mB[i] = model.source.peakmag('bessellB', 'ab')
+        df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1vals, c=cvals, M=M, Mabs=Mabs,
+                               t0=T0Vals, z=self.zSamples))
+        return df
+
+class CoordSamples(PositionSamples, HealpixTiles):
+    def __init__(self, nside, hpOpSim, rng):
+        self.nside = nside
+        super(self.__class__, self).__init__(nside=nside, healpixelizedOpSim=hpOpSim)
+        self._rng = rng
+    @property
+    def randomState(self):
+        if self._rng is None:
+            raise ValueError('self._rng should not be None')
+        return self._rng
+    def _angularSamples(self, phi_c, theta_c, radius, numSamples, tileID):
+        phi, theta = super(self.__class__, self).samplePatchOnSphere(phi=phi_c,
+								     theta=theta_c, delta=radius, 
+                                                                     size=numSamples, rng=self.randomState)
+        tileIds = hp.ang2pix(nside=self.nside, theta=np.radians(theta),
+			     phi=np.radians(phi), nest=True)
+        inTile = tileIds == tileID
+        return phi[inTile], theta[inTile]
+        
+    def positions(self, tileID, numSamples):
+        res_phi = np.zeros(numSamples)
+        res_theta = np.zeros(numSamples)
+        ang = hp.pix2ang(nside=self.nside, ipix=tileID, nest=True)
+        radius = np.degrees(np.sqrt(hp.nside2pixarea(self.nside) / np.pi))
+        phi_c, theta_c = np.degrees(ang[::-1])
+        num_already = 0
+        while numSamples > 0:
+            phi, theta = self._angularSamples(phi_c, theta_c, radius=2*radius,
+					      numSamples=numSamples,
+					      tileID=tileID)
+            num_obtained = len(phi)
+            res_phi[num_already:num_obtained + num_already] = phi
+            res_theta[num_already:num_obtained + num_already] = theta
+            num_already += num_obtained
+            numSamples -= num_obtained
+            print(numSamples)
+        return res_phi, res_theta
+
+
+
 
 class PowerLawRates(RateDistributions):
     """
@@ -34,12 +128,12 @@ class PowerLawRates(RateDistributions):
     """
 
     def __init__(self,
+                 rng,
                  alpha=2.6e-5, beta=1.5,
                  zbinEdges=None,
                  zlower=1.0e-8,
                  zhigher=1.4,
                  numBins=20,
-                 rng=None,
                  surveyDuration=10., # Unit of  years
                  fieldArea=None, # Unit of degree square
                  skyFraction=None,
@@ -47,6 +141,7 @@ class PowerLawRates(RateDistributions):
         """
         Parameters
         ----------
+        rng : instance of `np.random.RandomState`
         cosmo : Instance of `astropy.cosmology` class, optional, defaults to Planck15
             data structure specifying the cosmological parameters 
         alpha : float, optional, defaults to 2.6e-5
@@ -193,6 +288,7 @@ class PowerLawRates(RateDistributions):
 
     @property
     def zSamples(self):
+        # Calculate only once
         if self._zSamples is None:
             numSN = self.numSN()
             zbinEdges =  self.zbinEdges
