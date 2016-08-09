@@ -230,21 +230,6 @@ class PowerLawRates(RateDistributions):
         numBins : int, optional, defaults to None
            if not None, overrides zbinEdges
         """
-        # if fieldArea is None and skyFraction is None:
-        #    raise ValueError('both fieldArea and skyFraction cannot be None')
-        # elif fieldArea is not None and skyFraction is not None:
-        #    raise ValueError('both fieldArea and skyFraction cannot be given')
-        # if fieldArea is not None: 
-        #    skyFraction = fieldArea * np.radians(1.)**2.0  / 4.0 / np.pi
-
-        # if zbinEdges is None:
-        #    if any(_x is None for _x in (zlower, zhigher, numBins)):
-        #        raise valueError('zbinEdges or zlower, zhigher, numbins must'
-        #                         'be given')
-        #    else:
-        #        zbinEdges = np.linspace(zlower, zhigher, numBins + 1)
-
-        # midpoints of z bins where the rate is evaluated
         DeltaT = self.DeltaT
         skyFraction = self.skyFraction
         zbinEdges = self.zbinEdges
