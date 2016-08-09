@@ -27,9 +27,6 @@ class SNParamDistribution(with_metaclass(abc.ABCMeta, object)):
     def set_randomState(self):
         pass
 
-    @abc.abstractmethod
-    def sample_params(self):
-        pass
 
     @abc.abstractproperty
     def sn_params(self):
