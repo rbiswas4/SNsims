@@ -130,3 +130,5 @@ class HealpixTiles(Tiling):
             raise ValueError('both attributes preComputedMap and hpOpSim cannot'
                              ' be None')
                 
+
+    def positions(self, tileID, numSamples):

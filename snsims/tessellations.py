@@ -124,3 +124,8 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
         """
         pass
 
+    @abc.abstractmethod
+    def positions(self, tileID, numSamples):
+        """
+        return a tuple of numpy arrays theta and phi, each of size numSamples
+        """
