@@ -20,7 +20,7 @@ class SimpleSALTDist(SALT2Parameters):
     Concrete Implementation of `SALT2Parameters`
     """
     def __init__(self, numSN, zSamples, alpha=0.11, beta=3.14, cSigma=0.1,
-                 x1Sigma=1.0, meanM=-19.3,  Mdisp=0.15, rng=None, cosmo=Planck15):
+                 x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None, cosmo=Planck15):
         self.alpha = alpha
         self.beta = beta
         self.numSN = numSN

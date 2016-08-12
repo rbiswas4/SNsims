@@ -66,7 +66,7 @@ class HealpixTiles(Tiling):
     def area(self, tileID):
         if tileID not in self.tileIDSequence:
             raise ValueError('parameter tileID not in set of healpixIDs')
-        return self._tileArea
+        return self._tileArea * np.degrees(1.) * np.degrees(1.)
 
     def tileIDsForSN(self, ra, dec):
         """

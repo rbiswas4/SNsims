@@ -9,7 +9,7 @@ from .tessellations import Tiling
 
 
 __all__ = ['SNParamDistribution', 'RateDistributions', 'SALT2Parameters',
-           'PositionSamples']
+           'PositionSamples', 'DisjointParams']
 
 class SNParamDistribution(with_metaclass(abc.ABCMeta, object)):
     """
@@ -56,7 +56,13 @@ class SALT2Parameters(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
     def __init__(self, numSN, zSamples, cSigma=0.1, x1Sigma=1.0, rng=None):
+        
+        self._numSN = numSN
         pass
+
+    @property
+    def numSN(self):
+        return self.numSN
 
     @abc.abstractproperty
     def randomState(self):
@@ -71,6 +77,9 @@ class PositionSamples(with_metaclass(abc.ABCMeta, Tiling)):
     @abc.abstractproperty
     def randomState(self):
         pass
+
+    def numPositions(self, tileID):
+        return len(self.positions[0])
 
     @abc.abstractproperty
     def positions(self, tileID):
@@ -132,6 +141,8 @@ class PositionSamples(with_metaclass(abc.ABCMeta, Tiling)):
         return np.degrees(phivals) , np.degrees(thetavals)
 
 class DisjointParams(with_metaclass(abc.ABCMeta, SNParamDistribution,
+                                    SALT2Parameters,
+                                    PositionSamples,
                                     RateDistributions)):
     pass
 
