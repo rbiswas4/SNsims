@@ -185,7 +185,6 @@ class HealpixTiles(Tiling):
                                               rng=rng)
             # print(self.nside, tileID, self.area(tileID))
             s = rng.get_state()
-            print(s)
             num_obtained = len(phi)
             res_phi[num_already:num_obtained + num_already] = phi
             res_theta[num_already:num_obtained + num_already] = theta
