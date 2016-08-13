@@ -132,7 +132,7 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
         """
 
     @staticmethod
-    def samplePatchOnSphere(phi, theta, delta, size, rng):
+    def samplePatchOnSphere(phi, theta, delta, size, rng, degrees=True):
         """
         Uniformly distributes samples on a patch on a sphere between phi \pm delta,
         and theta \pm delta on a sphere. Uniform distribution implies that the

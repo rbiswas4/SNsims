@@ -135,10 +135,10 @@ class HealpixTiles(Tiling):
 								     theta=theta_c,
                                                                      delta=radius, 
                                                                      size=numSamples,
-                                                                     degrees=False
+                                                                     degrees=False,
                                                                      rng=rng)
-        tileIds = hp.ang2pix(nside=self.nside, theta=np.radians(theta),
-			     phi=np.radians(phi), nest=True)
+        tileIds = hp.ang2pix(nside=self.nside, theta=theta,
+			     phi=phi, nest=True)
         inTile = tileIds == tileID
         return phi[inTile], theta[inTile]
         
@@ -169,7 +169,10 @@ class HealpixTiles(Tiling):
         res_phi = np.zeros(numSamples)
 
         # Set the center of the patch at the vertex of the tile
-        theta_c, phi_c = hp.pix2ang(nside=self.nside, ipix=tileID, nest=True)
+        theta_c, phi_c = np.degrees(hp.pix2ang(nside=self.nside,
+                                               ipix=tileID,
+                                               nest=True)
+                                   )
         radius = 2 * np.sqrt(self.area(tileID) / np.pi)
 
         # number of 
@@ -189,5 +192,5 @@ class HealpixTiles(Tiling):
             num_already += num_obtained
             numSamples -= num_obtained
 
-        return res_phi, res_theta
+        return np.degrees(res_phi), np.degrees(res_theta)
 
