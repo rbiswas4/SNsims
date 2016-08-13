@@ -1,7 +1,7 @@
 """
 Class for describing tesselations of the sphere
 
-Following the usual usage, a tesselation or tiling of the sphere is a 
+Following the usual usage, a tesselation or tiling of the sphere is a
 covering of the sphere by a set of gemetrical shapes called tiles, such that
 each point of the sphere belongs to one and only one tile (we will be negligent
 about edges of tiles). Thus, no two tiles overlap, and there is no point on the
@@ -12,7 +12,7 @@ spatial groupings lead to similar (if not same) observational properties in
 terms of the set of observational pointings, as well as the sky properties (eg.
 seeing, psf, airmass, MW extinction etc.). The similarities increase as the size of the tiles
 decrease.  Therefore, a sensible way to distribute SN simulations is by grouping
-the simulations on small tiles together. 
+the simulations on small tiles together.
 
 Allowed tilings must satisfy certain properties as encoded in the abstract base
 class below as well as listed here. Additionally, there are desired properties
@@ -24,7 +24,7 @@ OpSim outputs.
 Methods and Attributes Required and Intended Usage:
 ---------------------------------------------------
     - tileIDSequence : Obtain the entire set of tiles which cover the unit
-        sphere 
+        sphere
     - pointingSequenceForTile :  A method to obtain the maximal set of
         pointings that may overlap a point on a tile. Obviously, there can be
         points in a tile which do not overlap with subsets of such pointings.
@@ -35,6 +35,7 @@ Methods and Attributes Required and Intended Usage:
 from __future__ import absolute_import, print_function
 from future.utils import with_metaclass
 import abc
+import numpy as np
 
 __all__ = ["Tiling"]
 
@@ -49,7 +50,7 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
 
     Methods
     -------
-    pointingSequenceForTile: 
+    pointingSequenceForTile :
     """
     @abc.abstractmethod
     def __init__(self):
@@ -96,7 +97,7 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
         Parameters
         ----------
         tileID : int or string, or `numpy.ndarray` thereof, mandatory
-            Index for desired tile 
+            Index for desired tile
 
         Returns
         -------
@@ -129,3 +130,64 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
         """
         return a tuple of numpy arrays theta and phi, each of size numSamples
         """
+
+    @staticmethod
+    def samplePatchOnSphere(phi, theta, delta, size, rng):
+        """
+        Uniformly distributes samples on a patch on a sphere between phi \pm delta,
+        and theta \pm delta on a sphere. Uniform distribution implies that the
+        number of points in a patch of sphere is proportional to the area of the
+        patch. Here, the coordinate system is the usual
+        spherical coordinate system but with the azimuthal angle theta going from
+        90 degrees at the North Pole, to -90 degrees at the South Pole, through
+        0. at the equator. 
+        
+        This function is not equipped to handle wrap-around the ranges of theta
+        phi and therefore does not work at the poles.
+     
+        Parameters
+        ----------
+        phi: float, mandatory, degrees
+            center of the spherical patch in ra with range 
+        theta: float, mandatory, degrees
+        delta: float, mandatory, degrees
+        size: int, mandatory
+            number of samples
+        seed : int, optional, defaults to 1
+            random Seed used for generating values
+        degrees : bool, optional, defaults to True
+            if True, returns angles in degrees, else in
+            radians
+
+        Returns
+        -------
+        tuple of (phivals, thetavals) where phivals and thetavals are arrays of 
+            size size in degrees.
+        """
+        u = rng.uniform(size=size)
+        v = rng.uniform(size=size)
+        phi = np.radians(phi)
+        theta = np.radians(theta)
+        delta = np.radians(delta)
+    
+        phivals = 2. * delta * u + (phi - delta)
+        phivals = np.where ( phivals >= 0., phivals, phivals + 2. * np.pi)
+ 
+        # use conventions in spherical coordinates
+        theta = np.pi/2.0 - theta
+        thetamax = theta + delta
+        thetamin = theta - delta
+    
+        if thetamax > np.pi or thetamin < 0. :
+            raise ValueError('Function not implemented to cover wrap around poles')
+    
+        # Cumulative Density Function is cos(thetamin) - cos(theta) / cos(thetamin) - cos(thetamax)
+        a = np.cos(thetamin) - np.cos(thetamax)
+        thetavals = np.arccos(-v * a + np.cos(thetamin))
+    
+        # Get back to -pi/2 to pi/2 range of decs
+        thetavals = np.pi/2.0 - thetavals 
+        if degrees:
+            return np.degrees(phivals) , np.degrees(thetavals)
+        else:
+            return phivals , thetavals

@@ -50,14 +50,13 @@ class HealpixTiles(Tiling):
                 self._preComputedMap = 'sqlite:///' + self._preComputedMap
 
         return self._preComputedMap
+
     @property
     def preComputedEngine(self):
         engine = self._preComputedEngine
         if engine is None:
             engine = create_engine(self.preComputedMap, echo=False)
         return engine
-
-
 
     @property
     def tileIDSequence(self):
@@ -131,4 +130,64 @@ class HealpixTiles(Tiling):
                              ' be None')
                 
 
-    def positions(self, tileID, numSamples):
+    def _angularSamples(self, phi_c, theta_c, radius, numSamples, tileID, rng):
+        phi, theta = super(self.__class__, self).samplePatchOnSphere(phi=phi_c,
+								     theta=theta_c,
+                                                                     delta=radius, 
+                                                                     size=numSamples,
+                                                                     degrees=False
+                                                                     rng=rng)
+        tileIds = hp.ang2pix(nside=self.nside, theta=np.radians(theta),
+			     phi=np.radians(phi), nest=True)
+        inTile = tileIds == tileID
+        return phi[inTile], theta[inTile]
+        
+
+    def positions(self, tileID, numSamples, rng=None):
+        """
+        Return a tuple of (res_phi, res_theta) where res_phi and res_theta are
+        spatially uniform samples  of positions of size numSamples.
+
+        Parameters
+        ---------
+        tileID : int, mandatory
+
+        numSamples : number of positions required
+
+        rng : instance of `np.random.RandomState`
+
+
+        Returns
+        -------
+        """
+        # set the random number generator seed
+        if rng is None:
+            rng = np.random.RandomState(tileID)
+
+        # zero return arrays
+        res_theta = np.zeros(numSamples)
+        res_phi = np.zeros(numSamples)
+
+        # Set the center of the patch at the vertex of the tile
+        theta_c, phi_c = hp.pix2ang(nside=self.nside, ipix=tileID, nest=True)
+        radius = 2 * np.sqrt(self.area(tileID) / np.pi)
+
+        # number of 
+        num_already = 0
+
+        while numSamples > 0:
+            phi, theta = self._angularSamples(phi_c, theta_c, radius=radius,
+                                              numSamples=numSamples,
+                                              tileID=tileID,
+                                              rng=rng)
+            # print(self.nside, tileID, self.area(tileID))
+            s = rng.get_state()
+            print(s)
+            num_obtained = len(phi)
+            res_phi[num_already:num_obtained + num_already] = phi
+            res_theta[num_already:num_obtained + num_already] = theta
+            num_already += num_obtained
+            numSamples -= num_obtained
+
+        return res_phi, res_theta
+
