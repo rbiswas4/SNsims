@@ -168,7 +168,7 @@ class PowerLawRates(RateDistributions):
         if self._skyFraction is None:
             if self.fieldArea is None:
                 raise ValueError('both fieldArea and skyFraction cannot be given')
-            self._skyFraction = fieldArea * np.radians(1.)**2.0  / 4.0 / np.pi
+            self._skyFraction = self.fieldArea * np.radians(1.)**2.0  / 4.0 / np.pi
         return self._skyFraction
 
     @property
