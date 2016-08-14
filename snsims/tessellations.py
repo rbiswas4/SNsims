@@ -138,8 +138,8 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
         and theta \pm delta on a sphere. Uniform distribution implies that the
         number of points in a patch of sphere is proportional to the area of the
         patch. Here, the coordinate system is the usual
-        spherical coordinate system but with the azimuthal angle theta going from
-        90 degrees at the North Pole, to -90 degrees at the South Pole, through
+        spherical coordinate system with the azimuthal angle theta going from
+        0 degrees at the North Pole, to 90 degrees at the South Pole, through
         0. at the equator. 
         
         This function is not equipped to handle wrap-around the ranges of theta
@@ -174,19 +174,19 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
         phivals = np.where ( phivals >= 0., phivals, phivals + 2. * np.pi)
  
         # use conventions in spherical coordinates
-        theta = np.pi/2.0 - theta
+        # theta = np.pi/2.0 - theta
         thetamax = theta + delta
         thetamin = theta - delta
     
-        if thetamax > np.pi or thetamin < 0. :
-            raise ValueError('Function not implemented to cover wrap around poles')
+        # if thetamax > np.pi or thetamin < 0. :
+        #    raise ValueError('Function not implemented to cover wrap around poles')
     
         # Cumulative Density Function is cos(thetamin) - cos(theta) / cos(thetamin) - cos(thetamax)
         a = np.cos(thetamin) - np.cos(thetamax)
         thetavals = np.arccos(-v * a + np.cos(thetamin))
     
         # Get back to -pi/2 to pi/2 range of decs
-        thetavals = np.pi/2.0 - thetavals 
+        # thetavals = np.pi/2.0 - thetavals 
         if degrees:
             return np.degrees(phivals) , np.degrees(thetavals)
         else:

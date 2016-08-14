@@ -131,6 +131,7 @@ class HealpixTiles(Tiling):
                 
 
     def _angularSamples(self, phi_c, theta_c, radius, numSamples, tileID, rng):
+
         phi, theta = super(self.__class__, self).samplePatchOnSphere(phi=phi_c,
 								     theta=theta_c,
                                                                      delta=radius, 
