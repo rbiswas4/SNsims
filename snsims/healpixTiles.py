@@ -147,7 +147,8 @@ class HealpixTiles(Tiling):
     def positions(self, tileID, numSamples, rng=None):
         """
         Return a tuple of (res_phi, res_theta) where res_phi and res_theta are
-        spatially uniform samples  of positions of size numSamples.
+        spatially uniform samples  of positions of size numSamples within the
+        healpix Tile with ipix=tileID in the nested scheme.
 
         Parameters
         ---------
@@ -160,6 +161,17 @@ class HealpixTiles(Tiling):
 
         Returns
         -------
+
+        .. notes : 1. The inelegant method is sampling a circle with a radius
+            twice that required to have an area equal to the healpix tile. This
+            operation can be done by self.samplePatchOnSphere and returns 
+            numSamples, some of which are not on the healpixTiles.
+            2. `self._angularSamples` returns only those of this sequence which
+            lie on the original tile.
+            3. by repeating the process till the number obtained matches the number
+            requested, we obtain nsamples on the tile.
+            4. The method works as long as the radius is large enough so that
+            corners of the tile are not outside the circle sampled.
         """
         # set the random number generator seed
         if rng is None:
