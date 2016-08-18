@@ -148,7 +148,9 @@ class HealpixTiles(Tiling):
         """
         Return a tuple of (res_phi, res_theta) where res_phi and res_theta are
         spatially uniform samples  of positions of size numSamples within the
-        healpix Tile with ipix=tileID in the nested scheme.
+        healpix Tile with ipix=tileID in the nested scheme. The return values
+        should be in degrees, with the convention that theta is 0 on the equator and 
+        90 degrees at the North Pole.
 
         Parameters
         ---------
@@ -196,7 +198,6 @@ class HealpixTiles(Tiling):
                                               numSamples=numSamples,
                                               tileID=tileID,
                                               rng=rng)
-            # print(self.nside, tileID, self.area(tileID))
             s = rng.get_state()
             num_obtained = len(phi)
             res_phi[num_already:num_obtained + num_already] = phi
@@ -204,5 +205,6 @@ class HealpixTiles(Tiling):
             num_already += num_obtained
             numSamples -= num_obtained
 
-        return np.degrees(res_phi), np.degrees(res_theta)
+        # Covert to ra, dec
+        return np.degrees(res_phi), - np.degrees(res_theta) + 90.0
 
