@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from .version import *
+from .version import __VERSION__
 # Tilings
 from .tessellations import *
 from .healpixTiles import *

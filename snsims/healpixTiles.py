@@ -190,7 +190,7 @@ class HealpixTiles(Tiling):
                                    )
         radius = 2 * np.sqrt(self.area(tileID) / np.pi)
 
-        # number of 
+        # number of already obtained samples
         num_already = 0
 
         while numSamples > 0:
@@ -206,5 +206,5 @@ class HealpixTiles(Tiling):
             numSamples -= num_obtained
 
         # Covert to ra, dec
-        return np.degrees(res_phi), - np.degrees(res_theta) + 90.0
+        return np.degrees(res_phi), -np.degrees(res_theta) + 90.0
 

@@ -23,7 +23,6 @@ class SimpleSALTDist(SALT2Parameters):
                  x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None, cosmo=Planck15):
         self.alpha = alpha
         self.beta = beta
-        print(numSN)
         self._numSN = numSN
         self.zSamples = zSamples
         self.x1Sigma = x1Sigma
@@ -102,7 +101,6 @@ class CoordSamples(PositionSamples, HealpixTiles):
             res_theta[num_already:num_obtained + num_already] = theta
             num_already += num_obtained
             numSamples -= num_obtained
-            print(numSamples)
         return res_phi, res_theta
 
 
