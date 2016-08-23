@@ -5,6 +5,8 @@ import abc
 
 from .tessellations import Tiling
 from .universe import Universe
+from .paramDistribution import SimpleSALTDist
+from .healpixTiles import HealpixTiles
 import os
 import numpy as np
 import pandas as pd
@@ -12,10 +14,10 @@ from lsst.sims.photUtils import BandpassDict
 from lsst.sims.catUtils.supernovae import SNObject
 
 __all__ = ['SimulationTile']
-class SimulationTile(snsims.Universe):
+class SimulationTile(Universe):
     def __init__(self, paramDist, rate, NSIDE, tileID, hpOpSim, allPointings=None, timeRange=None):
         self._randomState = None
-        self.Tiling = snsims.HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
+        self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
         self.tileID = tileID
         self.fieldArea = self.Tiling.area(tileID)
         self.zdist = rate(rng=self.randomState, fieldArea=self.fieldArea)
@@ -62,7 +64,7 @@ class SimulationTile(snsims.Universe):
         ra = self.positions[0]
         dec = - self.positions[1] + 45.0 
         # Why do we need numSN
-        sp = snsims.SimpleSALTDist(numSN=numSN, rng=self.randomState, zSamples=self.zsamples).paramSamples
+        sp = SimpleSALTDist(numSN=numSN, rng=self.randomState, zSamples=self.zsamples).paramSamples
         sp['ra'] = self.positions[0]
         sp['dec'] = self.positions[1]
         sp['snid'] = np.left_shift(self.tileID, 20) + np.arange(numSN)
