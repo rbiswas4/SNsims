@@ -5,6 +5,11 @@ import abc
 
 from .tessellations import Tiling
 from .universe import Universe
+import os
+import numpy as np
+import pandas as pd
+from lsst.sims.photUtils import BandpassDict
+from lsst.sims.catUtils.supernovae import SNObject
 
 __all__ = ['SimulationTile']
 class SimulationTile(snsims.Universe):
@@ -117,4 +122,7 @@ class SimulationTile(snsims.Universe):
         sn, df = self.SN(snid, timeRange)
         # with pd.get_store(fileName) as store:
         #     store.append('tile_{}'.format(self.tileID), df)
-        df.to_hdf(fileName, key='tile_{}'.format(self.tileID), mode='a', format='t')
+        # df.to_hdf(fileName, key='tile_{}'.format(self.tileID), mode='a', format='t')
+        df['filter'] = df['filter'].astype(str)
+        with pd.get_store(fileName) as store:
+            store.append('tile_{}'.format(self.tileID), df)
