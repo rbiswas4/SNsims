@@ -133,7 +133,7 @@ class HealpixTiles(Tiling):
             return obsHistIDs
         else:
             names = list(columns)
-            return allPointings.ix[obsHistIDs][names]
+            return allPointings.summary.ix[obsHistIDs][names]
                 
 
     def _angularSamples(self, phi_c, theta_c, radius, numSamples, tileID, rng):
