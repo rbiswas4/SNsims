@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from .version import *
+from .version import __VERSION__
 # Tilings
 from .tessellations import *
 from .healpixTiles import *
@@ -10,4 +10,4 @@ from .universe import *
 from .populationParamSamples import *
 from .paramDistribution import *
 # Simulations
-# from .simulations import *
+from .simulations import *

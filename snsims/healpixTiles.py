@@ -117,17 +117,23 @@ class HealpixTiles(Tiling):
             raise ValueError('both attributes preComputedMap and hpOpSim cannot'
                              ' be None')
 
-    def pointingSequenceForTile(self, tileID, allPointings, **kwargs):
+    def pointingSequenceForTile(self, tileID, allPointings=None, columns=None, **kwargs):
         """
-        return a maximal sequence of pointings for a particular tileID
+        return a maximal sequence of pointings for a particular tileID.
         """
+        obsHistIDs = None
         if self.preComputedMap is not None:
-            return self._pointingFromPrecomputedDB(tileID, tableName='simlib')
+            obsHistIDs = self._pointingFromPrecomputedDB(tileID, tableName='simlib')
         elif self.hpOpSim is not None:
-            return self._pointingFromHpOpSim(tileID)
+            obsHistIDs = self._pointingFromHpOpSim(tileID)
         else:
             raise ValueError('both attributes preComputedMap and hpOpSim cannot'
                              ' be None')
+        if allPointings is None or columns is None:
+            return obsHistIDs
+        else:
+            names = list(columns)
+            return allPointings.summary.ix[obsHistIDs][names]
                 
 
     def _angularSamples(self, phi_c, theta_c, radius, numSamples, tileID, rng):
@@ -148,7 +154,9 @@ class HealpixTiles(Tiling):
         """
         Return a tuple of (res_phi, res_theta) where res_phi and res_theta are
         spatially uniform samples  of positions of size numSamples within the
-        healpix Tile with ipix=tileID in the nested scheme.
+        healpix Tile with ipix=tileID in the nested scheme. The return values
+        should be in degrees, with the convention that theta is 0 on the equator and 
+        90 degrees at the North Pole.
 
         Parameters
         ---------
@@ -188,7 +196,7 @@ class HealpixTiles(Tiling):
                                    )
         radius = 2 * np.sqrt(self.area(tileID) / np.pi)
 
-        # number of 
+        # number of already obtained samples
         num_already = 0
 
         while numSamples > 0:
@@ -196,7 +204,6 @@ class HealpixTiles(Tiling):
                                               numSamples=numSamples,
                                               tileID=tileID,
                                               rng=rng)
-            # print(self.nside, tileID, self.area(tileID))
             s = rng.get_state()
             num_obtained = len(phi)
             res_phi[num_already:num_obtained + num_already] = phi
@@ -204,5 +211,6 @@ class HealpixTiles(Tiling):
             num_already += num_obtained
             numSamples -= num_obtained
 
-        return np.degrees(res_phi), np.degrees(res_theta)
+        # Covert to ra, dec
+        return np.degrees(res_phi), -np.degrees(res_theta) + 90.0
 

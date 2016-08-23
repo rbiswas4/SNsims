@@ -23,7 +23,7 @@ class SimpleSALTDist(SALT2Parameters):
                  x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None, cosmo=Planck15):
         self.alpha = alpha
         self.beta = beta
-        self.numSN = numSN
+        self._numSN = numSN
         self.zSamples = zSamples
         self.x1Sigma = x1Sigma
         self.cSigma = cSigma
@@ -33,6 +33,9 @@ class SimpleSALTDist(SALT2Parameters):
         self._paramSamples = None
         self.cosmo = cosmo
 
+    @property
+    def numSN(self):
+        return self._numSN
     @property
     def randomState(self):
         if self._rng is None:
@@ -98,7 +101,6 @@ class CoordSamples(PositionSamples, HealpixTiles):
             res_theta[num_already:num_obtained + num_already] = theta
             num_already += num_obtained
             numSamples -= num_obtained
-            print(numSamples)
         return res_phi, res_theta
 
 
@@ -185,7 +187,8 @@ class PowerLawRates(RateDistributions):
                                  '(zlower, zhigher, numBins) cannot be None')
             if self.zlower >= self.zhigher:
                 raise ValueError('zlower must be less than zhigher')
-        return np.linspace(self.zlower, self.zhigher, self.numBins + 1)
+            self._zbinEdges = np.linspace(self.zlower, self.zhigher, self.numBins + 1)
+        return self._zbinEdges
 
 
 
