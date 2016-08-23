@@ -117,17 +117,23 @@ class HealpixTiles(Tiling):
             raise ValueError('both attributes preComputedMap and hpOpSim cannot'
                              ' be None')
 
-    def pointingSequenceForTile(self, tileID, allPointings, **kwargs):
+    def pointingSequenceForTile(self, tileID, allPointings=None, columns=None, **kwargs):
         """
         return a maximal sequence of pointings for a particular tileID.
         """
+        obsHistIDs = None
         if self.preComputedMap is not None:
-            return self._pointingFromPrecomputedDB(tileID, tableName='simlib')
+            obsHistIDs = self._pointingFromPrecomputedDB(tileID, tableName='simlib')
         elif self.hpOpSim is not None:
-            return self._pointingFromHpOpSim(tileID)
+            obsHistIDs = self._pointingFromHpOpSim(tileID)
         else:
             raise ValueError('both attributes preComputedMap and hpOpSim cannot'
                              ' be None')
+        if allPointings is None or columns is None:
+            return obsHistIDs
+        else:
+            names = list(columns)
+            return allPointings.ix[obsHistIDs][names]
                 
 
     def _angularSamples(self, phi_c, theta_c, radius, numSamples, tileID, rng):
