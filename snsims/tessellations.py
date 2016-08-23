@@ -62,7 +62,8 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
 
 
     @abc.abstractmethod
-    def pointingSequenceForTile(self, tileID, allPointings, **kwargs):
+    def pointingSequenceForTile(self, tileID, allPointings=None, columns=None,
+                                **kwargs):
         """
         Return a sequence of IDs identifying the maximal set of OpSim pointings
         (obsHistID) that intersect with the tile having ID tileID.
@@ -75,6 +76,9 @@ class Tiling(with_metaclass(abc.ABCMeta, object)):
             Information about a set of pointings we will worry about. The set
             of pointings may be in a database or a dataFrame, and different ways
             of connecting to them is ideally supported.
+        columns : tuple of strings, defaults to None
+            if None returns only obsHistIDs. Otherwise returns the columns
+            listed
         kwargs : extra parameters
             specify method to use optional precomputations to speed up this
             function

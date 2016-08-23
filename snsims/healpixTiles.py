@@ -119,7 +119,7 @@ class HealpixTiles(Tiling):
 
     def pointingSequenceForTile(self, tileID, allPointings, **kwargs):
         """
-        return a maximal sequence of pointings for a particular tileID
+        return a maximal sequence of pointings for a particular tileID.
         """
         if self.preComputedMap is not None:
             return self._pointingFromPrecomputedDB(tileID, tableName='simlib')
