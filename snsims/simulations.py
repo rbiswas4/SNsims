@@ -15,7 +15,15 @@ from lsst.sims.catUtils.supernovae import SNObject
 
 __all__ = ['SimulationTile']
 class SimulationTile(Universe):
-    def __init__(self, paramDist, rate, NSIDE, tileID, hpOpSim, allPointings=None, timeRange=None):
+    def __init__(self,
+                 paramDist,
+                 rate,
+                 NSIDE,
+                 tileID,
+                 hpOpSim,
+                 allPointings=None,
+                 timeRange=None):
+
         self._randomState = None
         self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
         self.tileID = tileID
@@ -23,11 +31,13 @@ class SimulationTile(Universe):
         self.zdist = rate(rng=self.randomState, fieldArea=self.fieldArea)
         self.zsamples = self.zdist.zSamples
         self.numSN = len(self.zsamples)
-        self.positions = self.Tiling.positions(self.tileID, self.numSN, rng=self.randomState)
+        self.positions = self.Tiling.positions(self.tileID, self.numSN,
+                                               rng=self.randomState)
         self._snParamTable = None
         self.columns = ('expMJD', 'filter', 'fieldID', 'fiveSigmaDepth')
         self.tilePointings = self.Tiling.pointingSequenceForTile(self.tileID, 
-                                                                 allPointings=allPointings, columns=self.columns)
+                                                                 allPointings=allPointings,
+                                                                 columns=self.columns)
         self._timeRange = timeRange
         self.bandPasses = BandpassDict.loadTotalBandpassesFromFiles()
         
@@ -52,19 +62,23 @@ class SimulationTile(Universe):
         if self._snParamTable is None:
             self.snParams()
         return self._snParamTable
+
     @property
     def randomState(self):
         if self._randomState is None:
             self._randomState = np.random.RandomState(self.tileID)
         return self._randomState
+
     def snParams(self):
         zsamples = self.zdist.zSamples
         numSN = len(zsamples)
-        positions = self.Tiling.positions(self.tileID, numSN, rng=self.randomState)
+        positions = self.Tiling.positions(self.tileID, numSN,
+                                          rng=self.randomState)
         ra = self.positions[0]
         dec = - self.positions[1] + 45.0 
         # Why do we need numSN
-        sp = SimpleSALTDist(numSN=numSN, rng=self.randomState, zSamples=self.zsamples).paramSamples
+        sp = SimpleSALTDist(numSN=numSN, rng=self.randomState,
+                            zSamples=self.zsamples).paramSamples
         sp['ra'] = self.positions[0]
         sp['dec'] = self.positions[1]
         sp['snid'] = np.left_shift(self.tileID, 20) + np.arange(numSN)
@@ -74,13 +88,15 @@ class SimulationTile(Universe):
         if self.minPeakTime is None or self.maxPeakTime is None:
             pass
         else:
-            sp['t0'] = self.minPeakTime + (self.maxPeakTime - self.minPeakTime) * sp['t0']
+            sp['t0'] = self.minPeakTime + \
+                       (self.maxPeakTime - self.minPeakTime) * sp['t0']
         return sp
     
     @staticmethod
     def getSNCosmoParamDict(odict, SNCosmoModel):
         mydict = dict()
         param_names = SNCosmoModel.param_names
+
         for param in odict.index.values:
             if param in param_names:
                 mydict[param] = odict[param]
@@ -113,18 +129,34 @@ class SimulationTile(Universe):
         df['flux'] = fluxes
         df['fluxerrs'] = fluxerrs
         return sn, df
+
     def writeTile(self, fileName, timeRange='model'):
+        """
+        """
         count = 0
         for snid in self.snParamTable.index.values:
             self.writeSN(snid, fileName, timeRange=timeRange)
             if count % 50 == 0:
+                if count == 0:
+                    pass
                 print('another 50', snid)
             count += 1
+
     def writeSN(self, snid, fileName, timeRange='model'):
+        """
+        Write light curve of SN to disc
+
+        Parameters
+        ----------
+        snid : int/string
+            SN id of SN 
+        fileName : string, mandatory
+
+        timeRange : string, optional, defaults to model
+            time range over which the light curve is written to disk
+
+        """
         sn, df = self.SN(snid, timeRange)
-        # with pd.get_store(fileName) as store:
-        #     store.append('tile_{}'.format(self.tileID), df)
-        # df.to_hdf(fileName, key='tile_{}'.format(self.tileID), mode='a', format='t')
         df['filter'] = df['filter'].astype(str)
         with pd.get_store(fileName) as store:
             store.append('tile_{}'.format(self.tileID), df)

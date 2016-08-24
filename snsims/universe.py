@@ -38,8 +38,8 @@ class Universe(with_metaclass(abc.ABCMeta, object)):
         """
         pass
 
-    @abc.abstractproperty
-    def SN(self):
+    @abc.abstractmethod
+    def SN(self, snid):
         """
         Generator for supernova instances. Taking the snParams associated with
         a single SN, this uses a supernova model to produce all known
