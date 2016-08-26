@@ -29,11 +29,11 @@ def aliasDictionary(sequence, aliases):
 
     Examples
     --------
-    >>> aliases = dict(time=['mjd','expmjd'], flux=['counts'],
+    >>> aliases = dict(time=['mjd','expmjd'], flux=['counts'],\
                        fluxerr=['flux_err', 'fluxerror'], zpsys=['magsys'])
     >>> testSeq = ['mJd', 'band', 'zp', 'Flux', 'fluxError', 'zpsys']
-    >>> aliasDictionary(testSeq, aliases) == {'Flux': 'flux',
-                                              'fluxError': 'fluxerr',
+    >>> aliasDictionary(testSeq, aliases) == {'Flux': 'flux', \
+                                              'fluxError': 'fluxerr',\
                                               'mJd': 'time'}
     True
 
