@@ -4,6 +4,7 @@ Class for holding Light Curve Data
 from __future__ import absolute_import, print_function, division
 from future.utils import with_metaclass
 import abc
+import numpy as np
 import pandas as pd
 from astropy.table import Table
 from .aliases import aliasDictionary
@@ -110,10 +111,37 @@ class LightCurve(BaseLightCurve):
         else:
             return _lc
 
-    def snCosmoLC(self, coaddTimes=None):
-        lc = self.lightCurve.rename(columns=dict(mjd='time'))
-        return Table.from_pandas(lc)
+    def snCosmoLC(self, coaddTimes=None, mjdBefore=0., minmjd=None):
+        lc = self.coaddedLC(coaddTimes=coaddTimes, mjdBefore=mjdBefore,
+                            minmjd=minmjd).rename(columns=dict(mjd='time'))
+        return Table.from_pandas(lc                 )
 
-    def coaddedLC(self, coaddTimes=None):
-        pass
+    def coaddedLC(self, coaddTimes=None, mjdBefore=None, minmjd=None):
+        """
+        return a coadded light curve
+        """
+        if coaddTimes is None:
+            return self.lightCurve
+
+        # otherwise perform coadd
+        if minmjd is None:
+            if mjdBefore is None:
+                mjdBefore = 0.
+            minmjd = self.lightCurve.mjd.min() - mjdBefore
+
+        lc = self.lightCurve.copy()
+        lc['discreteTime'] = (lc['mjd'] - minmjd) // coaddTimes
+        lc['discreteTime'] = lc.discreteTime.astype(int)
+
+
+        aggregations = {'mjd': np.mean,
+                        'flux': np.mean,
+                        'fluxerr': lambda x: np.sqrt(np.sum(x**2))/len(x), 
+                        'zp': np.mean,
+                        'zpsys': 'first'}
+        groupedbynightlyfilters = lc.groupby(['discreteTime','band'])
+        glc = groupedbynightlyfilters.agg(aggregations)
+        glc.reset_index('band', inplace=True)
+        glc['SNR'] = glc['flux'] / glc['fluxerr']
+        return glc
 
