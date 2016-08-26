@@ -11,3 +11,4 @@ from .populationParamSamples import *
 from .paramDistribution import *
 # Simulations
 from .simulations import *
+from .lightcurve import *

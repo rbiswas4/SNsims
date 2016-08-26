@@ -9,7 +9,7 @@ from astropy.table import Table
 from .aliases import aliasDictionary
 
 
-__all__ = ['BaseLightCurve']
+__all__ = ['BaseLightCurve', 'LightCurve']
 
 
 class BaseLightCurve(with_metaclass(abc.ABCMeta, object)):
@@ -30,12 +30,12 @@ class BaseLightCurve(with_metaclass(abc.ABCMeta, object)):
         """
         pass
 
-    @abc.abstractproperty
+    @abc.abstractmethod
     def snCosmoLC(self, coaddTimes=None):
         pass
 
     @abc.abstractmethod
-    def coaddedLC(self, coaddTimes=None, format, *args, **kwargs):
+    def coaddedLC(self, coaddTimes=None, format=None, *args, **kwargs):
         pass
 
     def missingColumns(self, lcdf):
@@ -57,13 +57,63 @@ class BaseLightCurve(with_metaclass(abc.ABCMeta, object)):
         return reqd
 
     @property
-    def mandatoryColumnAliases(self):
+    def columnAliases(self):
         """
         dictionary that maps standard names as keys to a possible set of
         aliases
         """
         aliases = {}
         aliases['mjd'] = ['time', 'expMJD']
-        aliases['band'] = ['filter']
-        aliases['fluxerr'] = ['flux_err']
+        aliases['band'] = ['filter', 'filterName', 'bandName', 'bands']
+        aliases['fluxerr'] = ['flux_err', 'flux_errs', 'fluxError']
         return aliases
+
+class LightCurve(BaseLightCurve):
+
+    def __init__(self, lcdf):
+        """
+        Instantiate Light Curve class
+
+        Parameters
+        ----------
+        lcdf : `pd.DataFrame`, mandatory
+            light curve information
+        """
+        self._lightCurve  = lcdf
+
+
+    def missingColumns(self, lcdf):
+
+        notFound = self.mandatoryColumns - set(lcdf.columns)
+        return notFound
+
+    @property
+    def lightCurve(self):
+        """
+        The lightcurve in native format
+        """
+        # light curve
+        _lc = self._lightCurve
+
+        # Rename columns to standard names if necessary
+        aliases = self.columnAliases
+        standardNamingDict = aliasDictionary(_lc.columns, aliases)
+        if len(standardNamingDict) > 0:
+            _lc.rename(columns=standardNamingDict, inplace=True)
+
+        # If all  mandatory columns exist return the light curve, or
+        # raise ValueError citing missing columns
+        missingColumns = self.missingColumns(_lc)
+        if len(missingColumns) > 0:
+            raise ValueError('light curve data has missing columns',
+                             missingColumns)
+        else:
+            return _lc
+
+    def snCosmoLC(self, coaddTimes=None):
+        lc = self.lightCurve.rename(columns=dict(mjd='time'))
+        return Table.from_pandas(lc)
+
+    def coaddedLC(self, coaddTimes=None):
+        pass
+
