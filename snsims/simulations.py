@@ -84,7 +84,6 @@ class SimulationTile(Universe):
         sp['snid'] = np.left_shift(self.tileID, 20) + np.arange(numSN)
         sp.set_index('snid', inplace=True)
         self._snParamTable = sp
-        
         if self.minPeakTime is None or self.maxPeakTime is None:
             pass
         else:
@@ -111,24 +110,51 @@ class SimulationTile(Universe):
         sn.set(**sncosmo_params)
         z = sn.get('z')
         t0 = sn.get('t0')
-        lcMinTime = t0 - 20. * (1.0 + z)
-        lcMaxTime = t0 + 50. * (1.0 + z )
-        df = self.tilePointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime')
+        # lcMinTime = t0 - 20. * (1.0 + z)
+        # lcMaxTime = t0 + 50. * (1.0 + z )
+        return sn
+
+    @staticmethod
+    def modelFlux(snid, times, bands):
+
+        assert len(times) == len(bands)
+        flux = np.zeros(len(times))
+
+        for i, band in enumerate(bands):
+            bp = self.bandPasses[band]
+            flux[i] = sn.catsimBandFlux(bandpassobject=bp, time=times[i])
+        return flux
+
+
+
+    def lc(self, snid):
+        lcMinTime = self.SN(snid, timeRange='model').mintime()
+        lcMaxTime = self.SN(snid, timeRange='model').maxtime()
+        if lcMinTime is None or lcMaxTime is None:
+            df = self.tilePointings
+        else:
+            df = self.tilePointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime')
         df['snid'] = snid
-        fluxes = []
-        fluxerrs = []
-        for rows in df.iterrows():
-            row = rows[1]
+        df['ModelFlux'] = self.modelFlux(snid=snid, times=df.expMJD.values, bands=df.filter.values)
+        fluxerr = np.zeros(len(df))
+        for row in df.iterrows():
             # print(row['expMJD'], row['filter'], row['fiveSigmaDepth'])
             bp = self.bandPasses[row['filter']]
-            flux = sn.catsimBandFlux(bandpassobject=bp, time=row['expMJD'])
-            fluxerr = sn.catsimBandFluxError(time=row['expMJD'], bandpassobject=bp, fluxinMaggies=flux,
+            fluxerr[i] = sn.catsimBandFluxError(time=row['expMJD'],
+                                             bandpassobject=bp,
+                                             fluxinMaggies=row['ModelFlux'],
                                              m5=row['fiveSigmaDepth'])
-            fluxes.append(flux)
-            fluxerrs.append(fluxerr)
-        df['flux'] = fluxes
-        df['fluxerrs'] = fluxerrs
-        return sn, df
+
+        rng = self.randomState
+        df['fluxerr'] = fluxerr
+        deviations = rng.normal(size=len(df)) 
+        df['deviations'] = deviations
+        df['flux'] = df['ModelFlux'] + df['deviations'] * df['fluxerr']
+        df['zp'] = 0.
+        df['zpsys']= 'ab'
+        lc = df[['expMJD', 'filter', 'ModelFlux', 'fieldID', 'flux', 'fluxerr',
+                 'zp', 'zpsys', 'fieldID']]
+        return LightCurve(lc)
 
     def writeTile(self, fileName, timeRange='model'):
         """
