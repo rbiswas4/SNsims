@@ -64,9 +64,9 @@ class BaseLightCurve(with_metaclass(abc.ABCMeta, object)):
         aliases
         """
         aliases = {}
-        aliases['mjd'] = ['time', 'expMJD']
-        aliases['band'] = ['filter', 'filterName', 'bandName', 'bands']
-        aliases['fluxerr'] = ['flux_err', 'flux_errs', 'fluxError']
+        aliases['mjd'] = ['time', 'expmjd']
+        aliases['band'] = ['filter', 'filtername', 'bandname', 'bands']
+        aliases['fluxerr'] = ['flux_err', 'flux_errs', 'fluxerror']
         return aliases
 
 class LightCurve(BaseLightCurve):
@@ -114,7 +114,7 @@ class LightCurve(BaseLightCurve):
     def snCosmoLC(self, coaddTimes=None, mjdBefore=0., minmjd=None):
         lc = self.coaddedLC(coaddTimes=coaddTimes, mjdBefore=mjdBefore,
                             minmjd=minmjd).rename(columns=dict(mjd='time'))
-        return Table.from_pandas(lc                 )
+        return Table.from_pandas(lc)
 
     def coaddedLC(self, coaddTimes=None, mjdBefore=None, minmjd=None):
         """
@@ -137,11 +137,13 @@ class LightCurve(BaseLightCurve):
         aggregations = {'mjd': np.mean,
                         'flux': np.mean,
                         'fluxerr': lambda x: np.sqrt(np.sum(x**2))/len(x), 
+                        'discreteTime': 'count',
                         'zp': np.mean,
                         'zpsys': 'first'}
         groupedbynightlyfilters = lc.groupby(['discreteTime','band'])
         glc = groupedbynightlyfilters.agg(aggregations)
         glc.reset_index('band', inplace=True)
+        glc.rename(columns=dict(discreteTime='numCoadded'), inplace=True) 
         glc['SNR'] = glc['flux'] / glc['fluxerr']
         return glc
 

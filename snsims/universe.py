@@ -39,7 +39,7 @@ class Universe(with_metaclass(abc.ABCMeta, object)):
         pass
 
     @abc.abstractmethod
-    def SN(self, snid):
+    def SN(self, id):
         """
         Generator for supernova instances. Taking the snParams associated with
         a single SN, this uses a supernova model to produce all known
@@ -49,6 +49,29 @@ class Universe(with_metaclass(abc.ABCMeta, object)):
         scatter due to sky noise, additional random number seeds are needed.
         """
         pass
+
+    @abc.abstractmethod
+    def modelFlux(self, id, mjd, bands):
+        """
+        Return a flux value in units of maggies for the object with id id
+        at a time mjd, and in the band indicated by the string.
+
+        Parameters
+        ----------
+        id : int or string, mandatory
+            identifying index of the object
+        mjd : `np.ndarray` of dtype float
+
+        .. note : it is expected that this will be done by a method in the
+            object instance
+        """
+
+        pass
+    @abc.abstractmethod
+    def lc(self, id, deviations=None, randomState=None):
+        """
+        returns an instance of a `LightCurve` for object corresponding to the id.
+        """
 
 class HomogeneousSNUniverse(with_metaclass(abc.ABCMeta, Universe)):
 
