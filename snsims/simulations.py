@@ -113,7 +113,7 @@ class SimulationTile(Universe):
         t0 = sn.get('t0')
         lcMinTime = t0 - 20. * (1.0 + z)
         lcMaxTime = t0 + 50. * (1.0 + z )
-        df = self.tilePointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime')
+        df = self.tilePointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime').copy()
         df['snid'] = snid
         fluxes = []
         fluxerrs = []
@@ -126,8 +126,11 @@ class SimulationTile(Universe):
                                              m5=row['fiveSigmaDepth'])
             fluxes.append(flux)
             fluxerrs.append(fluxerr)
-        df['flux'] = fluxes
+        df['modelflux'] = fluxes
+        rng = self.randomState
+        df['deviations'] = rng.normal(0., 1.)
         df['fluxerrs'] = fluxerrs
+        df['flux'] = df['modelflux'] + df.deviations * df.fluxerrs
         return sn, df
 
     def writeTile(self, fileName, timeRange='model'):
