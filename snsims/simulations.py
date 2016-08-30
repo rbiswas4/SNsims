@@ -129,11 +129,12 @@ class SimulationTile(Universe):
         lcMinTime = self.SN(snid, timeRange='model').mintime()
         lcMaxTime = self.SN(snid, timeRange='model').maxtime()
         if lcMinTime is None or lcMaxTime is None:
-            df = self.tilePointings
+            df = self.tilePointings.copy()
         else:
-            df = self.tilePointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime')
+            df = self.tilePointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime').copy()
         df['snid'] = snid
-        df['ModelFlux'] = self.modelFlux(snid=snid, times=df.expMJD.values, bands=df['filter'].values)
+        df['ModelFlux'] = self.modelFlux(snid=snid, times=df.expMJD.values,
+                                         bands=df['filter'].values)
         fluxerr = np.zeros(len(df))
         for i, rowtuple in enumerate(df.iterrows()):
             row = rowtuple[1]
