@@ -186,7 +186,7 @@ class SimulationTile(Universe):
             count += 1
         if paramFileName is None:
             filename_parts = fileName.split('.')
-            filename_parts[-2] = '_params'
+            filename_parts[-2] += '_params'
             paramFileName = '.'.join(filename_parts)
         self.writeSNParams(paramFileName)
 
