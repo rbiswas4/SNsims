@@ -169,7 +169,7 @@ class SimulationTile(Universe):
         df['ModelFlux'] = modelFlux
         df['flux'] = df['ModelFlux'] + df['deviations'] * df['fluxerr']
         df['zpsys']= 'ab'
-        lc = df[['expMJD', 'filter', 'ModelFlux', 'fieldID', 'flux', 'fluxerr',
+        lc = df[['snid', 'expMJD', 'filter', 'ModelFlux', 'fieldID', 'flux', 'fluxerr',
                  'zp', 'zpsys', 'fieldID']]
         return LightCurve(lc)
 
