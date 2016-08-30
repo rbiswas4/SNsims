@@ -181,7 +181,8 @@ class SimulationTile(Universe):
             time range over which the light curve is written to disk
 
         """
-        sn, df = self.SN(snid, timeRange)
-        df['filter'] = df['filter'].astype(str)
+        lc = self.lc(snid)
+        df = lc.lightCurve 
+        df['band'] = df['band'].astype(str)
         with pd.get_store(fileName) as store:
             store.append('tile_{}'.format(self.tileID), df)
