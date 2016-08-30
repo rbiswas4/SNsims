@@ -113,44 +113,61 @@ class SimulationTile(Universe):
         # lcMaxTime = t0 + 50. * (1.0 + z )
         return sn
 
-    def modelFlux(self, snid, times, bands):
+    @staticmethod
+    def staticModelFlux(sn, time, bandpassobject):
+        
+        return sn.catsimBandFlux(bandpassobject=bandpassobject,
+                                 time=time) 
 
-        assert len(times) == len(bands)
-        flux = np.zeros(len(times))
+    def modelFlux(self, snid, time, bandpassobject):
 
-        for i, band in enumerate(bands):
-            bp = self.bandPasses[band]
-            flux[i] = self.SN(snid).catsimBandFlux(bandpassobject=bp, time=times[i])
-        return flux
+        # assert len(times) == len(bands)
+        # flux = np.zeros(len(times))
+
+
+        # flux = np.asarray(list(self.SN(snid).catsimBandFlux(bandpassobject=self.bandPasses[bands[i]],
+        # time=times[i]) for i in range(len(times)))) 
+        #for i, band in enumerate(bands):
+        #    bp = self.bandPasses[band]
+        #    flux[i] = self.SN(snid).catsimBandFlux(bandpassobject=bp, time=times[i])
+        # print(len(flux), len(times))
+        return self.SN(snid).catsimBandFlux(bandpassobject=bandpassobject,
+                                                        time=time) 
 
 
 
     def lc(self, snid):
-        lcMinTime = self.SN(snid, timeRange='model').mintime()
-        lcMaxTime = self.SN(snid, timeRange='model').maxtime()
+        sn = self.SN(snid, timeRange='model')
+        lcMinTime = sn.mintime()
+        lcMaxTime = sn.maxtime()
+        # lcMinTime = self.SN(snid, timeRange='model').mintime()
+        # lcMaxTime = self.SN(snid, timeRange='model').maxtime()
         if lcMinTime is None or lcMaxTime is None:
             df = self.tilePointings.copy()
         else:
             df = self.tilePointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime').copy()
         df['snid'] = snid
-        df['ModelFlux'] = self.modelFlux(snid=snid, times=df.expMJD.values,
-                                         bands=df['filter'].values)
         fluxerr = np.zeros(len(df))
+        modelFlux = np.zeros(len(df))
         for i, rowtuple in enumerate(df.iterrows()):
             row = rowtuple[1]
             # print(row['expMJD'], row['filter'], row['fiveSigmaDepth'])
             bp = self.bandPasses[row['filter']]
-            fluxerr[i] = self.SN(snid, timeRange='model').catsimBandFluxError(time=row['expMJD'],
-                                             bandpassobject=bp,
-                                             fluxinMaggies=row['ModelFlux'],
-                                             m5=row['fiveSigmaDepth'])
+            modelFlux[i] = self.staticModelFlux(sn, row['expMJD'],
+                                                bandpassobject=bp)
+            fluxerr[i] = sn.catsimBandFluxError(time=row['expMJD'],
+                                                bandpassobject=bp,
+                                                # fluxinMaggies=row['ModelFlux'],
+                                                fluxinMaggies=modelFlux[i],
+                                                m5=row['fiveSigmaDepth'])
 
         rng = self.randomState
         df['fluxerr'] = fluxerr
         deviations = rng.normal(size=len(df)) 
         df['deviations'] = deviations
-        df['flux'] = df['ModelFlux'] + df['deviations'] * df['fluxerr']
         df['zp'] = 0.
+        df['ModelFlux'] = modelFlux
+        df['flux'] = df['ModelFlux'] + df['deviations'] * df['fluxerr']
         df['zpsys']= 'ab'
         lc = df[['expMJD', 'filter', 'ModelFlux', 'fieldID', 'flux', 'fluxerr',
                  'zp', 'zpsys', 'fieldID']]
