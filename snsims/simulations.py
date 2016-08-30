@@ -173,7 +173,7 @@ class SimulationTile(Universe):
                  'zp', 'zpsys', 'fieldID']]
         return LightCurve(lc)
 
-    def writeTile(self, fileName, timeRange='model'):
+    def writeTile(self, fileName, timeRange='model', paramFileName=None):
         """
         """
         count = 0
@@ -184,6 +184,18 @@ class SimulationTile(Universe):
                     pass
                 print('another 50', snid)
             count += 1
+        if paramFileName is None:
+            filename_parts = fileName.split('.')
+            filename_parts[-2] = '_params'
+            paramFileName = '.'.join(filename_parts)
+        self.writeSNParams(paramFileName)
+
+    def writeSNParams(self, paramFileName):
+        if paramFileName.endswith('.hdf'):
+            self.snParamTable.to_hdf(paramFileName, key='{}'.format(self.tileID))
+        else:
+            raise NotImplementedError('Only methods to write to hdf files'
+                                      'implemented')
 
     def writeSN(self, snid, fileName, timeRange='model'):
         """
