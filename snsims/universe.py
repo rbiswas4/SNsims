@@ -39,7 +39,7 @@ class Universe(with_metaclass(abc.ABCMeta, object)):
         pass
 
     @abc.abstractmethod
-    def sn(self, id):
+    def SN(self, id):
         """
         Generator for supernova instances. Taking the snParams associated with
         a single SN, this uses a supernova model to produce all known
@@ -51,7 +51,7 @@ class Universe(with_metaclass(abc.ABCMeta, object)):
         pass
 
     @abc.abstractmethod
-    def modelFluxValue(self, id, mjd, bands):
+    def modelFlux(self, id, mjd, bands):
         """
         Return a flux value in units of maggies for the object with id id
         at a time mjd, and in the band indicated by the string.

@@ -7,6 +7,7 @@ from .tessellations import Tiling
 from .universe import Universe
 from .paramDistribution import SimpleSALTDist
 from .healpixTiles import HealpixTiles
+from .lightcurve import LightCurve
 import os
 import numpy as np
 import pandas as pd
@@ -104,9 +105,7 @@ class SimulationTile(Universe):
     def SN(self, snid, timeRange='model'):
         mySNParams = self.snParamTable.ix[snid]
         sn = SNObject(ra=mySNParams.ra, dec=mySNParams.dec)
-        #print mySNParams
         sncosmo_params = self.getSNCosmoParamDict(mySNParams, sn)
-        #print(sncosmo_params)
         sn.set(**sncosmo_params)
         z = sn.get('z')
         t0 = sn.get('t0')
@@ -114,15 +113,14 @@ class SimulationTile(Universe):
         # lcMaxTime = t0 + 50. * (1.0 + z )
         return sn
 
-    @staticmethod
-    def modelFlux(snid, times, bands):
+    def modelFlux(self, snid, times, bands):
 
         assert len(times) == len(bands)
         flux = np.zeros(len(times))
 
         for i, band in enumerate(bands):
             bp = self.bandPasses[band]
-            flux[i] = sn.catsimBandFlux(bandpassobject=bp, time=times[i])
+            flux[i] = self.SN(snid).catsimBandFlux(bandpassobject=bp, time=times[i])
         return flux
 
 
@@ -135,12 +133,13 @@ class SimulationTile(Universe):
         else:
             df = self.tilePointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime')
         df['snid'] = snid
-        df['ModelFlux'] = self.modelFlux(snid=snid, times=df.expMJD.values, bands=df.filter.values)
+        df['ModelFlux'] = self.modelFlux(snid=snid, times=df.expMJD.values, bands=df['filter'].values)
         fluxerr = np.zeros(len(df))
-        for row in df.iterrows():
+        for i, rowtuple in enumerate(df.iterrows()):
+            row = rowtuple[1]
             # print(row['expMJD'], row['filter'], row['fiveSigmaDepth'])
             bp = self.bandPasses[row['filter']]
-            fluxerr[i] = sn.catsimBandFluxError(time=row['expMJD'],
+            fluxerr[i] = self.SN(snid, timeRange='model').catsimBandFluxError(time=row['expMJD'],
                                              bandpassobject=bp,
                                              fluxinMaggies=row['ModelFlux'],
                                              m5=row['fiveSigmaDepth'])

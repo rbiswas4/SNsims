@@ -64,9 +64,9 @@ class BaseLightCurve(with_metaclass(abc.ABCMeta, object)):
         aliases
         """
         aliases = {}
-        aliases['mjd'] = ['time', 'expMJD']
-        aliases['band'] = ['filter', 'filterName', 'bandName', 'bands']
-        aliases['fluxerr'] = ['flux_err', 'flux_errs', 'fluxError']
+        aliases['mjd'] = ['time', 'expmjd']
+        aliases['band'] = ['filter', 'filtername', 'bandname', 'bands']
+        aliases['fluxerr'] = ['flux_err', 'flux_errs', 'fluxerror']
         return aliases
 
 class LightCurve(BaseLightCurve):

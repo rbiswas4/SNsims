@@ -11,4 +11,5 @@ from .populationParamSamples import *
 from .paramDistribution import *
 # Simulations
 from .simulations import *
+from .aliases import aliasDictionary, mapSeq2Standard
 from .lightcurve import *
