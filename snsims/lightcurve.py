@@ -144,6 +144,6 @@ class LightCurve(BaseLightCurve):
         glc = groupedbynightlyfilters.agg(aggregations)
         glc.reset_index('band', inplace=True)
         glc.rename(columns=dict(discreteTime='numCoadded'), inplace=True) 
-        glc['SNR'] = glc['flux'] / glc['fluxerr']
+        glc['CoaddedSNR'] = glc['flux'] / glc['fluxerr']
         return glc
 
