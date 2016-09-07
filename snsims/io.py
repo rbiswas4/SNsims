@@ -12,16 +12,20 @@ Thus, all writers should have certain functionality:
 """
 from __future__ import absolute_import, division, print_function
 import os
+import pandas as pd
 import glob
+import numpy as np
 
+__all__ = ['OpSimField']
 class OpSimField(object):
 
-    def __init__(fieldID, dirname, doneTiles=None, maxLog2ObsHistID=22):
-        self.dirname = self.abspath(dirname)
+    def __init__(self, fieldID, dirname, doneTiles=[], maxLog2ObsHistID=22):
+        self.dirname = os.path.abspath(dirname)
         self.fieldID = fieldID
         self.doneTiles = set(doneTiles)
         self.thisRun = None
         self.validate()
+        self.maxLog2ObsHistID = maxLog2ObsHistID
 
     def paramDF(self, toDoList=None):
         if toDoList is None:
@@ -35,23 +39,25 @@ class OpSimField(object):
     def cleanup(df):
         colnames = df.columns.values
         fieldID_inds = np.where(colnames=='fieldID')[0] 
-        fieldID = lcs.iloc[:, fieldID_inds].values
+        fieldID = df.iloc[:, fieldID_inds].values
         good_cols = np.where(colnames!='fieldID')
-        lcs = lcs[good_cols].copy()
-        lcs['fieldID'] = fieldID 
+        lcs = df[colnames[good_cols]].copy()
+        lcs['fieldID'] = fieldID[:, 0] 
+        return lcs
 
         return lcs
     def lcDF(self, toDoList=None):
         if toDoList is None:
             toDoList = self.thisRun
         lcFiles = list(os.path.join(self.dirname,
-                                     'simTiles_{}.hdf'.format(tileID)))
+                                     'simTiles_{}.hdf'.format(tileID)) for tileID in self.thisRun)
         lclist = list(pd.read_hdf(lcFile).reset_index() for lcFile in lcFiles)
         lcs = pd.concat(lclist, ignore_index=True)
-        lcs['indVals'] = np.left_shift(lcs.snid, maxLog2ObsHistID) + \
+        lcs['indVals'] = np.left_shift(lcs.snid, self.maxLog2ObsHistID) + \
                          lcs.obsHistID
         lcs = self.cleanup(lcs)
-        return lcs.set_index('indVals', inplace=True)
+        lcs.set_index('indVals', inplace=True)
+        return lcs
 
     def writeFiles(self, toDoList=None, baseFileName=None):
         if toDoList is None:
@@ -60,29 +66,29 @@ class OpSimField(object):
             baseFileName = 'SimFielID_{}'.format(self.fieldID)
         lcdf = self.lcDF(toDoList)
         pdf = self.paramDF(toDoList)
-        lcdf.write(baseFileName +'_lcs.hdf')
-        pdf.write(baseFileName +'_params.hdf')
+        lcdf.to_hdf(baseFileName +'_lcs.hdf', key=str(self.fieldID))
+        pdf.to_hdf(baseFileName +'_params.hdf', key=str(self.fieldID))
 
     @property
     def runTiles(self):
 
         hdfFiles = glob.glob(self.dirname + '/*params.hdf')
-        tiles = list(int(fname.split('.hdf')[0].split('params')[-1])
-                     for fname in hdfFiles)
+        tiles = list(fname.split('_')[2] for fname in hdfFiles)
+        tiles = list(int(tile) for tile in tiles)
         return set(tiles)
 
     @property
     def fieldTiles(self):
         csvFile = os.path.join(self.dirname,
-                               'tiles_{}.csv '.format(self.fieldID))
-        assert os.path.file.exists(csvFile)
-        tileIDs = set(pd.read_csv(csvFile).values.tolist())
+                               'tiles_{}.csv'.format(self.fieldID))
+        assert os.path.exists(csvFile)
+        tileIDs = set(pd.read_csv(csvFile, names=['tileId']).tileId.values.tolist())
         return tileIDs
 
     def validate(self):
         csvFile = os.path.join(self.dirname,
                                'tiles_{}.csv '.format(self.fieldID))
-        toDo = tileIDs - self.doneTiles
+        toDo = self.fieldTiles - self.doneTiles
         assert toDo == self.runTiles
         self.thisRun = toDo
 
