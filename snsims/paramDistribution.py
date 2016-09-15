@@ -246,7 +246,7 @@ class PowerLawRates(RateDistributions):
         vol = vols[1:] - vols[:-1]
         vol *= skyFraction
         
-        numSN = vol * snpervolume * DeltaT
+        numSN = vol * snpervolume * DeltaT / (1.0 + z_mids)
         return numSN.value
 
     def numSN(self):
