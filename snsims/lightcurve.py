@@ -111,9 +111,11 @@ class LightCurve(BaseLightCurve):
         else:
             return _lc
 
-    def snCosmoLC(self, coaddTimes=None, mjdBefore=0., minmjd=None):
+    def snCosmoLC(self, coaddTimes=None, mjdBefore=0., minmjd=None, dropna=True):
         lc = self.coaddedLC(coaddTimes=coaddTimes, mjdBefore=mjdBefore,
                             minmjd=minmjd).rename(columns=dict(mjd='time'))
+        if dropna:
+            lc = lc[np.isfinite(lc.flux) & np.isfinite(lc.fluxerr) & lc.fluxerr >= 0.]
         return Table.from_pandas(lc)
 
     def coaddedLC(self, coaddTimes=None, mjdBefore=None, minmjd=None):
