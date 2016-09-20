@@ -11,6 +11,6 @@ from .populationParamSamples import *
 from .paramDistribution import *
 # Simulations
 from .simulations import *
-from .aliases import aliasDictionary, mapSeq2Standard
-from .lightcurve import *
 from .samplingGalaxies import *
+from analyzeSN import aliasDictionary, mapSeq2Standard
+from analyzeSN import LightCurve
