@@ -7,7 +7,8 @@ from .tessellations import Tiling
 from .universe import Universe
 from .paramDistribution import SimpleSALTDist
 from .healpixTiles import HealpixTiles
-from .lightcurve import LightCurve
+# from .lightcurve import LightCurve
+from analyzeSN import LightCurve
 import os
 import numpy as np
 import pandas as pd
