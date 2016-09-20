@@ -8,15 +8,15 @@ def test_loadSN():
     assert d['x1'] == 0.0
 
 
-def test_attributeDefaults(self):
+def test_attributeDefaults():
     """
     Check the defaults and the setter properties for rectifySED and
     modelOutSideRange
     """
     snobj = SNObject(ra=30., dec=-60., source='salt2')
-    self.assertEqual(snobj.rectifySED, True)
-    self.assertEqual(snobj.modelOutSideTemporalRange, 'zero')
+    assert snobj.rectifySED ==  True
+    assert snobj.modelOutSideTemporalRange == 'zero'
 
     snobj.rectifySED = False
-    self.assertFalse(snobj.rectifySED, False)
-    self.assertEqual(snobj.modelOutSideTemporalRange, 'zero')
+    assert snobj.rectifySED == False
+    assert snobj.modelOutSideTemporalRange == 'zero'
