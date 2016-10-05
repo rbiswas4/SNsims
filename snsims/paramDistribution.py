@@ -13,14 +13,15 @@ from .populationParamSamples import (RateDistributions,
                                      PositionSamples)
 from astropy.cosmology import Planck15
 
-__all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples']
+__all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples', 'TwinklesRates']
 
 class SimpleSALTDist(SALT2Parameters):
     """
     Concrete Implementation of `SALT2Parameters`
     """
-    def __init__(self, numSN, zSamples, alpha=0.11, beta=3.14, cSigma=0.1,
+    def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14, cSigma=0.1,
                  x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None, cosmo=Planck15):
+        self._snids = snids
         self.alpha = alpha
         self.beta = beta
         self._numSN = numSN
@@ -32,7 +33,11 @@ class SimpleSALTDist(SALT2Parameters):
         self.Mdisp = Mdisp
         self._paramSamples = None
         self.cosmo = cosmo
-
+    @property
+    def snids(self):
+        if self._snids is None:
+            self._snids = np.arange(numSN)
+        return self._snids
     @property
     def numSN(self):
         return self._numSN
@@ -63,7 +68,7 @@ class SimpleSALTDist(SALT2Parameters):
                 x0[i] = model.get('x0')
                 mB[i] = model.source.peakmag('bessellB', 'ab')
         df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1vals, c=cvals, M=M, Mabs=Mabs,
-                               t0=T0Vals, z=self.zSamples))
+                               t0=T0Vals, z=self.zSamples, snid=self.snids))
         return df
 
 class CoordSamples(PositionSamples, HealpixTiles):
@@ -104,7 +109,54 @@ class CoordSamples(PositionSamples, HealpixTiles):
         return res_phi, res_theta
 
 
-
+class TwinklesRates(PowerLawRates):
+    def __init__(self, galsdf, rng, alpha=2.6e-3, beta=1.5, zbinEdges=None, zlower=0.0000001, zhigher=1.2, numBins=24,
+                surveyDuration=10., fieldArea=None, skyFraction=None, cosmo=Planck15):
+        PowerLawRates.__init__(self, rng=rng, alpha=alpha, beta=beta, zbinEdges=zbinEdges, zlower=zlower,
+                                      zhigher=zhigher, numBins=numBins, fieldArea=fieldArea, cosmo=cosmo)
+        self._galsdf = galsdf
+        self.binWidth = np.diff(self.zbinEdges)[0]
+        #self.galsdf =None
+        self.binnedGals = None
+        self.numGals = None
+        self.gdf = None
+        self.rng = rng
+        self._selectedGals = None
+        
+    
+    @property
+    def galsdf(self):
+        if self.gdf is not None:
+            return self.gdf
+        zhigher = self.zhigher
+        self.addRedshiftBins()
+        galsdf = self._galsdf.query('redshift < @zhigher')
+        self.binnedGals = galsdf.groupby('redshiftBin')
+        self.numGals = self.binnedGals.redshift.count()
+        galsdf['probHist'] = galsdf.redshiftBin.apply(self.probHost)
+        galsdf['hostAssignmentRandom'] = self.rng.uniform(size=len(galsdf))
+        self.gdf = galsdf
+        return galsdf
+    
+    def addRedshiftBins(self):
+        self._galsdf['redshiftBin'] = (self._galsdf.redshift - self.zlower) // self.binWidth
+        self._galsdf.redshiftBin = self._galsdf.redshiftBin.astype(np.int)
+        
+    @property    
+    def selectedGals(self):
+        if self._selectedGals is None:
+            df = self.galsdf.query('hostAssignmentRandom < probHist')
+            df.galtileid = df.galtileid.astype(int)
+            df['snid'] = df.galtileid * 1000000 + np.arange(len(df))
+        else:
+            df = self._selectedGals
+        return df
+    def probHost(self, binind):
+        return np.float(self.numSN()[binind]) / self.numGals[binind]
+    
+    @property
+    def zSamples(self):
+        return self.selectedGals.redshift.values
 
 class PowerLawRates(RateDistributions):
     """
