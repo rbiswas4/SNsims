@@ -22,15 +22,22 @@ class SersicSamples(object):
         self.xp1 = gammainc(2, self.fp1)
 
     @staticmethod
-    def sampleAngles(numSamples, a, b, rng):
+    def sampleAngles(a, b, numSamples=1, rng=np.random.RandomState()):
+        if isinstance(a, np.float):
+            assert isinstance(b, np.float)
+            if numSamples >=1:
+                a = np.ones(numSamples)*a
+                b = np.ones(numSamples)*b
+        if len(a) != len(b) or len(b) != numSamples:
+            raise ValueError('a, b, numSamples must have same lengths')
         u = rng.uniform(0., 2.0*np.pi, size=numSamples)
         binary = np.random.choice([0, 1], size=numSamples, p=[0.5, 0.5])
         return np.degrees(np.arctan(b*np.tan(u)/a) + binary*np.pi)
 
-    def sampleRadius(self, numSamples, halfLightRadius, sersicIndex=1):
-        if isinstance(halfLightRadius, np.float) and numSamples > 1:
+    def sampleRadius(self, halfLightRadius, numSamples=1, sersicIndex=1):
+        if isinstance(halfLightRadius, np.float) and numSamples >= 1:
             halfLightRadius = np.ones(numSamples) * halfLightRadius
-        if numSamples != len(halfLightRadius):
+        elif numSamples != len(halfLightRadius):
             raise ValueError('The lengths must match')
         u = self.rng.uniform(size=numSamples)
         if sersicIndex == 1:

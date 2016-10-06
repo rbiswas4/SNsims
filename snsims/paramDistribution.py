@@ -12,8 +12,10 @@ from .populationParamSamples import (RateDistributions,
                                      SALT2Parameters,
                                      PositionSamples)
 from astropy.cosmology import Planck15
+from .samplingGalaxies import SersicSamples
 
-__all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples', 'TwinklesRates']
+__all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples', 'TwinklesRates',
+           'CatSimPositionSampling']
 
 class SimpleSALTDist(SALT2Parameters):
     """
@@ -108,55 +110,6 @@ class CoordSamples(PositionSamples, HealpixTiles):
             numSamples -= num_obtained
         return res_phi, res_theta
 
-
-class TwinklesRates(PowerLawRates):
-    def __init__(self, galsdf, rng, alpha=2.6e-3, beta=1.5, zbinEdges=None, zlower=0.0000001, zhigher=1.2, numBins=24,
-                surveyDuration=10., fieldArea=None, skyFraction=None, cosmo=Planck15):
-        PowerLawRates.__init__(self, rng=rng, alpha=alpha, beta=beta, zbinEdges=zbinEdges, zlower=zlower,
-                                      zhigher=zhigher, numBins=numBins, fieldArea=fieldArea, cosmo=cosmo)
-        self._galsdf = galsdf
-        self.binWidth = np.diff(self.zbinEdges)[0]
-        #self.galsdf =None
-        self.binnedGals = None
-        self.numGals = None
-        self.gdf = None
-        self.rng = rng
-        self._selectedGals = None
-        
-    
-    @property
-    def galsdf(self):
-        if self.gdf is not None:
-            return self.gdf
-        zhigher = self.zhigher
-        self.addRedshiftBins()
-        galsdf = self._galsdf.query('redshift < @zhigher')
-        self.binnedGals = galsdf.groupby('redshiftBin')
-        self.numGals = self.binnedGals.redshift.count()
-        galsdf['probHist'] = galsdf.redshiftBin.apply(self.probHost)
-        galsdf['hostAssignmentRandom'] = self.rng.uniform(size=len(galsdf))
-        self.gdf = galsdf
-        return galsdf
-    
-    def addRedshiftBins(self):
-        self._galsdf['redshiftBin'] = (self._galsdf.redshift - self.zlower) // self.binWidth
-        self._galsdf.redshiftBin = self._galsdf.redshiftBin.astype(np.int)
-        
-    @property    
-    def selectedGals(self):
-        if self._selectedGals is None:
-            df = self.galsdf.query('hostAssignmentRandom < probHist')
-            df.galtileid = df.galtileid.astype(int)
-            df['snid'] = df.galtileid * 1000000 + np.arange(len(df))
-        else:
-            df = self._selectedGals
-        return df
-    def probHost(self, binind):
-        return np.float(self.numSN()[binind]) / self.numGals[binind]
-    
-    @property
-    def zSamples(self):
-        return self.selectedGals.redshift.values
 
 class PowerLawRates(RateDistributions):
     """
@@ -339,3 +292,146 @@ class PowerLawRates(RateDistributions):
             self._zSamples = np.asarray(list(__x for __lst in arr
                                              for __x in __lst))
         return self._zSamples
+
+
+class TwinklesRates(PowerLawRates):
+    def __init__(self, galsdf, rng, alpha=2.6e-3, beta=1.5, zbinEdges=None, zlower=0.0000001, zhigher=1.2, numBins=24,
+                surveyDuration=10., fieldArea=None, skyFraction=None, cosmo=Planck15):
+        PowerLawRates.__init__(self, rng=rng, alpha=alpha, beta=beta, zbinEdges=zbinEdges, zlower=zlower,
+                                      zhigher=zhigher, numBins=numBins, fieldArea=fieldArea, cosmo=cosmo)
+        self._galsdf = galsdf
+        self.binWidth = np.diff(self.zbinEdges)[0]
+        #self.galsdf =None
+        self.binnedGals = None
+        self.numGals = None
+        self.gdf = None
+        self.rng = rng
+        self._selectedGals = None
+        
+    
+    @property
+    def galsdf(self):
+        if self.gdf is not None:
+            return self.gdf
+        zhigher = self.zhigher
+        self.addRedshiftBins()
+        galsdf = self._galsdf.query('redshift < @zhigher')
+        self.binnedGals = galsdf.groupby('redshiftBin')
+        self.numGals = self.binnedGals.redshift.count()
+        galsdf['probHist'] = galsdf.redshiftBin.apply(self.probHost)
+        galsdf['hostAssignmentRandom'] = self.rng.uniform(size=len(galsdf))
+        self.gdf = galsdf
+        return galsdf
+    
+    def addRedshiftBins(self):
+        self._galsdf['redshiftBin'] = (self._galsdf.redshift - self.zlower) // self.binWidth
+        self._galsdf.redshiftBin = self._galsdf.redshiftBin.astype(np.int)
+        
+    @property    
+    def selectedGals(self):
+        if self._selectedGals is None:
+            df = self.galsdf.query('hostAssignmentRandom < probHist')
+            df.galtileid = df.galtileid.astype(int)
+            df['snid'] = df.galtileid * 1000000 + np.arange(len(df))
+        else:
+            df = self._selectedGals
+        return df
+    def probHost(self, binind):
+        return np.float(self.numSN()[binind]) / self.numGals[binind]
+    
+    @property
+    def zSamples(self):
+        return self.selectedGals.redshift.values
+
+class TwinklesRates(PowerLawRates):
+    def __init__(self, galsdf, rng, alpha=2.6e-3, beta=1.5, zbinEdges=None, zlower=0.0000001, zhigher=1.2, numBins=24,
+                surveyDuration=10., fieldArea=None, skyFraction=None, cosmo=Planck15):
+        PowerLawRates.__init__(self, rng=rng, alpha=alpha, beta=beta, zbinEdges=zbinEdges, zlower=zlower,
+                                      zhigher=zhigher, numBins=numBins, fieldArea=fieldArea, cosmo=cosmo)
+        self._galsdf = galsdf
+        self.binWidth = np.diff(self.zbinEdges)[0]
+        #self.galsdf =None
+        self.binnedGals = None
+        self.numGals = None
+        self.gdf = None
+        self.rng = rng
+        self._selectedGals = None
+        
+    
+    @property
+    def galsdf(self):
+        if self.gdf is not None:
+            return self.gdf
+        zhigher = self.zhigher
+        self.addRedshiftBins()
+        galsdf = self._galsdf.query('redshift < @zhigher')
+        self.binnedGals = galsdf.groupby('redshiftBin')
+        self.numGals = self.binnedGals.redshift.count()
+        galsdf['probHist'] = galsdf.redshiftBin.apply(self.probHost)
+        galsdf['hostAssignmentRandom'] = self.rng.uniform(size=len(galsdf))
+        self.gdf = galsdf
+        return galsdf
+    
+    def addRedshiftBins(self):
+        self._galsdf['redshiftBin'] = (self._galsdf.redshift - self.zlower) // self.binWidth
+        self._galsdf.redshiftBin = self._galsdf.redshiftBin.astype(np.int)
+        
+    @property    
+    def selectedGals(self):
+        if self._selectedGals is None:
+            df = self.galsdf.query('hostAssignmentRandom < probHist')
+            df.galtileid = df.galtileid.astype(int)
+            df['snid'] = df.galtileid * 1000000 + np.arange(len(df))
+        else:
+            df = self._selectedGals
+        return df
+    def probHost(self, binind):
+        return np.float(self.numSN()[binind]) / self.numGals[binind]
+    
+    @property
+    def zSamples(self):
+        return self.selectedGals.redshift.values
+
+class CatSimPositionSampling(object):
+    def __init__(self, rng, galdf):
+        self.galdf = galdf.copy()
+        self.rng = rng
+        self.ss = SersicSamples(rng=self.rng)
+    
+    def f1(self, x):
+        return self.ss.sampleRadius(x)[0]
+    def f4(self, x):
+        return self.ss.sampleRadius(x, sersicIndex=4)[0]
+    
+    def SampleDiskAngles(self, x):
+        return self.ss.sampleAngles(x.a_d, x.b_d)[0]
+    def SampleBulgeAngles(self, x):
+        return self.ss.sampleAngles(x.a_b, x.b_b)[0]
+    @staticmethod
+    def theta(df, angle='diskAngle', PositionAngle='pa_disk'):
+        return np.radians(df[angle] - df[PositionAngle] + 90.)
+
+    @staticmethod
+    def snInDisk(x, value=" None"):
+        if x.sedFilenameDisk == value:
+            return 0
+        elif x.sedFilenameBulge == value:
+            return 1
+        else:
+            return np.random.choice([0, 1], p=[0.5, 0.5])
+    def addPostions(self):
+        self.galdf['isinDisk'] = self.galdf.apply(self.snInDisk, axis=1)
+        self.galdf['bulgeRadialPos'] = self.galdf.BulgeHalfLightRadius.apply(self.f4)
+        self.galdf['diskRadialPos'] = self.galdf.DiskHalfLightRadius.apply(self.f1)
+        self.galdf['bulgeAngle'] = self.galdf.apply(self.SampleBulgeAngles, axis=1)
+        self.galdf['diskAngle'] = self.galdf.apply(self.SampleDiskAngles, axis=1)
+        self.galdf['DeltaRaDisk'] = self.galdf.diskRadialPos * np.cos(self.theta(self.galdf)) * self.galdf.isinDisk
+        self.galdf['DeltaRaBulge'] = self.galdf.bulgeRadialPos * self.theta(self.galdf, angle='bulgeAngle', 
+                                                                            PositionAngle='pa_bulge')\
+                                     * (1 - self.galdf.isinDisk)
+        self.galdf['DeltaDecDisk'] = self.galdf.diskRadialPos * np.sin(self.theta(self.galdf)) * self.galdf.isinDisk
+        self.galdf['DeltaDecBulge'] = self.galdf.bulgeRadialPos * np.sin(self.theta(self.galdf, angle='bulgeAngle',
+                                                                                 PositionAngle='pa_bulge')) \
+                                                                                 * (1 - self.galdf.isinDisk)
+        self.galdf['snra'] = self.galdf[['raJ2000','DeltaRaDisk', 'DeltaRaBulge']].apply(np.nansum, axis=1)
+        self.galdf['sndec'] = self.galdf[['decJ2000', 'DeltaDecDisk', 'DeltaDecBulge']].apply(np.nansum, axis=1)
