@@ -295,11 +295,18 @@ class PowerLawRates(RateDistributions):
 
 
 class TwinklesRates(PowerLawRates):
-    def __init__(self, galsdf, rng, alpha=2.6e-3, beta=1.5, zbinEdges=None, zlower=0.0000001, zhigher=1.2, numBins=24,
-                surveyDuration=10., fieldArea=None, skyFraction=None, cosmo=Planck15):
-        PowerLawRates.__init__(self, rng=rng, alpha=alpha, beta=beta, zbinEdges=zbinEdges, zlower=zlower,
-                                      zhigher=zhigher, numBins=numBins, fieldArea=fieldArea, cosmo=cosmo)
+    def __init__(self, galsdf, rng, alpha=2.6e-3, beta=1.5, zbinEdges=None,
+                 zlower=0.0000001, zhigher=1.2, numBins=24, agnGalids=None,
+                 surveyDuration=10., fieldArea=None, skyFraction=None,
+                 cosmo=Planck15):
+        PowerLawRates.__init__(self, rng=rng, alpha=alpha, beta=beta,
+                               zbinEdges=zbinEdges, zlower=zlower,
+                               zhigher=zhigher, numBins=numBins,
+                               fieldArea=fieldArea, cosmo=cosmo)
         self._galsdf = galsdf
+        if agnGalids is None:
+            agnGalids = []
+        self.agnGalTileIds = tuple(agnGalids)
         self.binWidth = np.diff(self.zbinEdges)[0]
         #self.galsdf =None
         self.binnedGals = None
@@ -315,7 +322,10 @@ class TwinklesRates(PowerLawRates):
             return self.gdf
         zhigher = self.zhigher
         self.addRedshiftBins()
-        galsdf = self._galsdf.query('redshift < @zhigher')
+        
+        vetoedGaltileIds = tuple(self.agnGalTileId)
+        sql_query = 'redshift < @zhigher and galtileid not in @vetoedGaltileIds'
+        galsdf = self._galsdf.query(sql_query)
         self.binnedGals = galsdf.groupby('redshiftBin')
         self.numGals = self.binnedGals.redshift.count()
         galsdf['probHist'] = galsdf.redshiftBin.apply(self.probHost)
@@ -344,6 +354,8 @@ class TwinklesRates(PowerLawRates):
         return self.selectedGals.redshift.values
 
 class TwinklesRates(PowerLawRates):
+    """
+    """
     def __init__(self, galsdf, rng, alpha=2.6e-3, beta=1.5, zbinEdges=None, zlower=0.0000001, zhigher=1.2, numBins=24,
                 surveyDuration=10., fieldArea=None, skyFraction=None, cosmo=Planck15):
         PowerLawRates.__init__(self, rng=rng, alpha=alpha, beta=beta, zbinEdges=zbinEdges, zlower=zlower,
