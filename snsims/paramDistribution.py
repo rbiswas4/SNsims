@@ -38,7 +38,7 @@ class SimpleSALTDist(SALT2Parameters):
     @property
     def snids(self):
         if self._snids is None:
-            self._snids = np.arange(numSN)
+            self._snids = np.arange(self.numSN)
         return self._snids
     @property
     def numSN(self):
