@@ -22,7 +22,10 @@ class SimpleSALTDist(SALT2Parameters):
     Concrete Implementation of `SALT2Parameters`
     """
     def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14, cSigma=0.1,
-                 x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None, cosmo=Planck15):
+                 x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None, cosmo=Planck15,
+                 mjdmin=0., surveyDuration=10.):
+        """
+        """
         self._snids = snids
         self.alpha = alpha
         self.beta = beta
@@ -35,6 +38,8 @@ class SimpleSALTDist(SALT2Parameters):
         self.Mdisp = Mdisp
         self._paramSamples = None
         self.cosmo = cosmo
+        self.mjdmin = mjdmin
+        self.mjdmax = self.mjdmin + surveyDuration * 365.0
     @property
     def snids(self):
         if self._snids is None:
@@ -45,18 +50,20 @@ class SimpleSALTDist(SALT2Parameters):
         if self._numSN is None:
             if self.zSamples is None:
                 raise ValueError('Both zSamples and numSN cannot be None')
-            self._numSN = len(self.zSamples))
+            self._numSN = len(self.zSamples)
         return self._numSN
     @property
     def randomState(self):
         if self._rng is None:
-            raise NotImplemented('rng must be provided')
+            raise NotImplementedError('rng must be provided')
         return self._rng
 
     @property
     def paramSamples(self):
         if self._paramSamples is None:
-            T0Vals = self.randomState.uniform(size=self.numSN)
+            timescale = self.mjdmax - self.mjdmin
+            T0Vals = self.randomState.uniform(size=self.numSN) * timescale\
+                    + self.mjdmin
             cvals = self.randomState.normal(loc=0., scale=self.cSigma,
                                             size=self.numSN)
             x1vals = self.randomState.normal(loc=0., scale=self.x1Sigma,
