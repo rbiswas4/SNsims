@@ -42,6 +42,10 @@ class SimpleSALTDist(SALT2Parameters):
         return self._snids
     @property
     def numSN(self):
+        if self._numSN is None:
+            if self.zSamples is None:
+                raise ValueError('Both zSamples and numSN cannot be None')
+            self._numSN = len(self.zSamples))
         return self._numSN
     @property
     def randomState(self):
