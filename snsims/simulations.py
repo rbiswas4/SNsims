@@ -68,7 +68,7 @@ class EntireSimulation(Universe):
         if self.angularUnits == 'radians':
             myra = np.radians(mySNParams.snra)
             mydec = np.decdians(mySNPadecms.sndec)
-        elif self.angularUnits = 'degrees':
+        elif self.angularUnits == 'degrees':
             myra = mySNParams.snra
             mydec = mySNPadecms.sndec
         sn = SNObject(ra=myra, dec=mydec)

@@ -414,12 +414,12 @@ class CatSimPositionSampling(object):
         self.galdf['DeltaDecBulge'] = self.galdf.bulgeRadialPos * np.sin(self.theta(self.galdf, angle='bulgeAngle',
                                                                                  PositionAngle='pa_bulge')) \
                                                                                  * (1 - self.galdf.isinDisk)
-        self.galdf['snra'] = np.radianOverArcSec *\
+        self.galdf['snra'] = self.radianOverArcSec *\
             self.galdf[['DeltaRaDisk', 'DeltaRaBulge']].apply(np.nansum, axis=1)\
             + self.galdf.raJ2000
 
-        self.galdf['sndec'] = np.radianOverArcSec *\ 
-            self.galdf[['DeltaDecDisk', 'DeltaDecBulge']].apply(np.nansum, axis=1)
+        self.galdf['sndec'] = self.radianOverArcSec *\
+            self.galdf[['DeltaDecDisk', 'DeltaDecBulge']].apply(np.nansum, axis=1)\
             + self.galdf.decJ2000
 
 class TwinklesSim(TwinklesRates):
