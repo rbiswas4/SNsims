@@ -38,10 +38,11 @@ class EntireSimulation(Universe):
     snParams : `pd.DataFrame`
 
     """
-    def __init__(self, rng, pointings, paramsDF):
+    def __init__(self, rng, pointings, paramsDF, angularUnits='radians'):
         self.pointings = pointings
         self._paramsDf = paramsDF
         self._rng = rng
+        self.angularUnits = angularUnits
         self.bandPasses = BandpassDict.loadTotalBandpassesFromFiles()
     
     @property
@@ -64,7 +65,13 @@ class EntireSimulation(Universe):
     
     def SN(self, snid, timeRange='model'):
         mySNParams = self.snParams.ix[snid]
-        sn = SNObject(ra=mySNParams.snra, dec=mySNParams.sndec)
+        if self.angularUnits == 'radians':
+            myra = np.radians(mySNParams.snra)
+            mydec = np.decdians(mySNPadecms.sndec)
+        elif self.angularUnits = 'degrees':
+            myra = mySNParams.snra
+            mydec = mySNPadecms.sndec
+        sn = SNObject(ra=myra, dec=mydec)
         sncosmo_params = self.getSNCosmoParamDict(mySNParams, sn)
         sn.set(**sncosmo_params)
         return sn
@@ -193,7 +200,8 @@ class SimulationTile(Universe):
                  tileID,
                  hpOpSim,
                  allPointings=None,
-                 timeRange=None):
+                 timeRange=None,
+                 angularUnits='radians'):
 
         self._randomState = np.random.RandomState(self.tileID)
         self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
