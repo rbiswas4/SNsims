@@ -12,15 +12,21 @@ from .populationParamSamples import (RateDistributions,
                                      SALT2Parameters,
                                      PositionSamples)
 from astropy.cosmology import Planck15
+from .samplingGalaxies import SersicSamples
 
-__all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples']
+__all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples', 'TwinklesRates',
+           'CatSimPositionSampling', 'TwinklesSim']
 
 class SimpleSALTDist(SALT2Parameters):
     """
     Concrete Implementation of `SALT2Parameters`
     """
-    def __init__(self, numSN, zSamples, alpha=0.11, beta=3.14, cSigma=0.1,
-                 x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None, cosmo=Planck15):
+    def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
+                 cSigma=0.1, x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None,
+                 cosmo=Planck15, mjdmin=0., surveyDuration=10.):
+        """
+        """
+        self._snids = snids
         self.alpha = alpha
         self.beta = beta
         self._numSN = numSN
@@ -32,20 +38,39 @@ class SimpleSALTDist(SALT2Parameters):
         self.Mdisp = Mdisp
         self._paramSamples = None
         self.cosmo = cosmo
+        self.mjdmin = mjdmin
+        self.surveyDuration = surveyDuration
+
+    @property
+    def mjdmax(self):
+        return self.mjdmin + self.surveyDuration * 365.0
+
+    @property
+    def snids(self):
+        if self._snids is None:
+            self._snids = np.arange(self.numSN)
+        return self._snids
 
     @property
     def numSN(self):
+        if self._numSN is None:
+            if self.zSamples is None:
+                raise ValueError('Both zSamples and numSN cannot be None')
+            self._numSN = len(self.zSamples)
         return self._numSN
+
     @property
     def randomState(self):
         if self._rng is None:
-            raise NotImplemented('rng must be provided')
+            raise NotImplementedError('rng must be provided')
         return self._rng
 
     @property
     def paramSamples(self):
         if self._paramSamples is None:
-            T0Vals = self.randomState.uniform(size=self.numSN)
+            timescale = self.mjdmax - self.mjdmin
+            T0Vals = self.randomState.uniform(size=self.numSN) * timescale \
+                    + self.mjdmin
             cvals = self.randomState.normal(loc=0., scale=self.cSigma,
                                             size=self.numSN)
             x1vals = self.randomState.normal(loc=0., scale=self.x1Sigma,
@@ -62,9 +87,10 @@ class SimpleSALTDist(SALT2Parameters):
                                             cosmo=self.cosmo)
                 x0[i] = model.get('x0')
                 mB[i] = model.source.peakmag('bessellB', 'ab')
-        df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1vals, c=cvals, M=M, Mabs=Mabs,
-                               t0=T0Vals, z=self.zSamples))
-        return df
+            df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1vals, c=cvals, M=M, Mabs=Mabs,
+                                   t0=T0Vals, z=self.zSamples, snid=self.snids))
+            self._paramSamples = df
+        return self._paramSamples
 
 class CoordSamples(PositionSamples, HealpixTiles):
     def __init__(self, nside, hpOpSim, rng):
@@ -102,8 +128,6 @@ class CoordSamples(PositionSamples, HealpixTiles):
             num_already += num_obtained
             numSamples -= num_obtained
         return res_phi, res_theta
-
-
 
 
 class PowerLawRates(RateDistributions):
@@ -287,3 +311,148 @@ class PowerLawRates(RateDistributions):
             self._zSamples = np.asarray(list(__x for __lst in arr
                                              for __x in __lst))
         return self._zSamples
+
+
+class TwinklesRates(PowerLawRates):
+    def __init__(self, galsdf, rng, alpha=2.6e-3, beta=1.5, zbinEdges=None,
+                 zlower=0.0000001, zhigher=1.2, numBins=24, agnGalids=None,
+                 surveyDuration=10., fieldArea=None, skyFraction=None,
+                 cosmo=Planck15):
+        PowerLawRates.__init__(self, rng=rng, alpha=alpha, beta=beta,
+                               zbinEdges=zbinEdges, zlower=zlower,
+                               zhigher=zhigher, numBins=numBins,
+                               fieldArea=fieldArea, cosmo=cosmo)
+        self._galsdf = galsdf
+        if agnGalids is None:
+            agnGalids = []
+        self.agnGalTileIds = tuple(agnGalids)
+        self.binWidth = np.diff(self.zbinEdges)[0]
+        #self.galsdf =None
+        self.binnedGals = None
+        self.numGals = None
+        self.gdf = None
+        self.rng = rng
+        self._selectedGals = None
+        
+    
+    @property
+    def galsdf(self):
+        if self.gdf is not None:
+            return self.gdf
+        zhigher = self.zhigher
+        self.addRedshiftBins()
+        
+        vetoedGaltileIds = tuple(self.agnGalTileIds)
+        sql_query = 'redshift <= @zhigher and galtileid not in @vetoedGaltileIds'
+        galsdf = self._galsdf.query(sql_query)
+        self.binnedGals = galsdf.groupby('redshiftBin')
+        self.numGals = self.binnedGals.redshift.count()
+        galsdf['probHist'] = galsdf.redshiftBin.apply(self.probHost)
+        galsdf['hostAssignmentRandom'] = self.rng.uniform(size=len(galsdf))
+        self.gdf = galsdf
+        return galsdf
+    
+    def addRedshiftBins(self):
+        self._galsdf['redshiftBin'] = (self._galsdf.redshift - self.zlower) // self.binWidth
+        self._galsdf.redshiftBin = self._galsdf.redshiftBin.astype(np.int)
+        
+    @property    
+    def selectedGals(self):
+        if self._selectedGals is None:
+            df = self.galsdf.query('hostAssignmentRandom < probHist')
+            df.galtileid = df.galtileid.astype(int)
+            df['snid'] = df.galtileid * 1000000 + np.arange(len(df))
+        else:
+            df = self._selectedGals
+        return df
+    def probHost(self, binind):
+        return np.float(self.numSN()[binind]) / self.numGals[binind]
+    
+    @property
+    def zSamples(self):
+        return self.selectedGals.redshift.values
+
+class CatSimPositionSampling(object):
+    def __init__(self, rng, galdf):
+        self.galdf = galdf.copy()
+        self.rng = rng
+        self.ss = SersicSamples(rng=self.rng)
+        self.radianOverArcSec = np.pi / 180.0 / 3600.
+    
+    def f1(self, x):
+        return self.ss.sampleRadius(x)[0]
+    def f4(self, x):
+        return self.ss.sampleRadius(x, sersicIndex=4)[0]
+    
+    def SampleDiskAngles(self, x):
+        return self.ss.sampleAngles(x.a_d, x.b_d)[0]
+    def SampleBulgeAngles(self, x):
+        return self.ss.sampleAngles(x.a_b, x.b_b)[0]
+    @staticmethod
+    def theta(df, angle='diskAngle', PositionAngle='pa_disk'):
+        return np.radians(df[angle] - df[PositionAngle] + 90.)
+
+    @staticmethod
+    def snInDisk(x, value=" None"):
+        if x.sedFilenameDisk == value:
+            return 0
+        elif x.sedFilenameBulge == value:
+            return 1
+        else:
+            return np.random.choice([0, 1], p=[0.5, 0.5])
+    def addPostions(self):
+        self.galdf['isinDisk'] = self.galdf.apply(self.snInDisk, axis=1)
+        self.galdf['bulgeRadialPos'] = self.galdf.BulgeHalfLightRadius.apply(self.f4)
+        self.galdf['diskRadialPos'] = self.galdf.DiskHalfLightRadius.apply(self.f1)
+        self.galdf['bulgeAngle'] = self.galdf.apply(self.SampleBulgeAngles, axis=1)
+        self.galdf['diskAngle'] = self.galdf.apply(self.SampleDiskAngles, axis=1)
+        self.galdf['DeltaRaDisk'] = self.galdf.diskRadialPos * np.cos(self.theta(self.galdf)) * self.galdf.isinDisk
+        self.galdf['DeltaRaBulge'] = self.galdf.bulgeRadialPos * self.theta(self.galdf, angle='bulgeAngle', 
+                                                                            PositionAngle='pa_bulge')\
+                                     * (1 - self.galdf.isinDisk)
+        self.galdf['DeltaDecDisk'] = self.galdf.diskRadialPos * np.sin(self.theta(self.galdf)) * self.galdf.isinDisk
+        self.galdf['DeltaDecBulge'] = self.galdf.bulgeRadialPos * np.sin(self.theta(self.galdf, angle='bulgeAngle',
+                                                                                 PositionAngle='pa_bulge')) \
+                                                                                 * (1 - self.galdf.isinDisk)
+        self.galdf['snra'] = np.radianOverArcSec *\
+            self.galdf[['DeltaRaDisk', 'DeltaRaBulge']].apply(np.nansum, axis=1)\
+            + self.galdf.raJ2000
+
+        self.galdf['sndec'] = np.radianOverArcSec *\ 
+            self.galdf[['DeltaDecDisk', 'DeltaDecBulge']].apply(np.nansum, axis=1)
+            + self.galdf.decJ2000
+
+class TwinklesSim(TwinklesRates):
+    def __init__(self, catsimgaldf, rng, fieldArea, cosmo, agnGalids=None, numBins=24,
+                 rate_alpha=0.0026, rate_beta=1.5, zlower=1.0e-7, zhigher=1.2,
+                 zbinEdges=None, tripp_alpha=0.11, tripp_beta=3.14):
+        TwinklesRates.__init__(self, gals, rng=rng, cosmo=cosmo, fieldArea=TwinklesArea, 
+                               agnGalids=agngaltileids, alpha=rate_alpha, beta=rate_beta,
+                               zlower=zlower, zhigher=1.2, numBins=numBins, zbinEdges=None,
+                               skyFraction=None)
+        self.cosmo = cosmo
+        self.beta_rate = deepcopy(self.beta)
+        self.alpha_rate = deepcopy(self.alpha)
+        self.numSN = len(self.zSamples)
+        self.tripp_alpha = tripp_alpha
+        self.tripp_beta = tripp_beta
+        self.catsimpos = CatSimPositionSampling(rng=self.rng, 
+                                            galdf=self.selectedGals)
+        self.catsimpos.addPostions()
+        self.salt2params = SimpleSALTDist(numSN=self.numSN, 
+                                          zSamples=self.zSamples, 
+                                          rng=self.rng,
+                                          cosmo=self.cosmo,
+                                          snids=self.catsimpos.galdf.snid,
+                                          alpha=self.tripp_alpha,
+                                          beta=self.tripp_beta,
+                                          surveyDuration=10.,
+                                          mjdmin=59580.)
+        self._snparamdf = None
+    @property
+    def snparamdf(self):
+        if self._snparamdf is None:
+            self.salt2params.paramSamples.set_index('snid', inplace=True)
+            self.catsimpos.galdf.set_index('snid', inplace=True)
+            self._snparamdf = self.salt2params.paramSamples.join(self.catsimpos.galdf)
+        return self._snparamdf

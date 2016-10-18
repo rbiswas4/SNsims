@@ -55,7 +55,8 @@ class RateDistributions(with_metaclass(abc.ABCMeta, object)):
 class SALT2Parameters(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
-    def __init__(self, numSN, zSamples, cSigma=0.1, x1Sigma=1.0, rng=None):
+    def __init__(self, numSN, zSamples, snids=None, cSigma=0.1, x1Sigma=1.0,
+                 rng=None):
         
         self._numSN = numSN
         pass

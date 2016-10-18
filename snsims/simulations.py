@@ -14,7 +14,184 @@ import pandas as pd
 from lsst.sims.photUtils import BandpassDict
 from lsst.sims.catUtils.supernovae import SNObject
 
-__all__ = ['SimulationTile']
+__all__ = ['SimulationTile', 'EntireSimulation', 'TiledSimulation']
+
+class EntireSimulation(Universe):
+    """
+    Simulation of a set of SN from a set of telescope pointings
+    and a set of SN. The simulation is perfectly reproducible if
+    both the pointings, paramsDF are the same (in terms of ordering)
+    
+    Parameters
+    -----------
+    rng : instance of `numpy.random.RandomState` 
+    pointings: instance of `pd.DataFrame` 
+    	dataFrame with a minimal set of columns
+	[`expMJD`, `filter`, `fiveSigmaDepth`]
+    paramsDF : `pd.DataFrame`
+	the minimal set of columns are 
+	[`snid`, `x0`, `t0`, `x1` , `c` , `snra`, `sndec`]
+
+    Attributes
+    ----------
+    randomState : `numpy.random.RandomState`
+    snParams : `pd.DataFrame`
+
+    """
+    def __init__(self, rng, pointings, paramsDF, angularUnits='radians'):
+        self.pointings = pointings
+        self._paramsDf = paramsDF
+        self._rng = rng
+        self.angularUnits = angularUnits
+        self.bandPasses = BandpassDict.loadTotalBandpassesFromFiles()
+    
+    @property
+    def randomState(self):
+        return self._rng
+
+    @property
+    def snParams(self):
+        return self._paramsDf
+
+    @staticmethod
+    def getSNCosmoParamDict(odict, SNCosmoModel):
+        mydict = dict()
+        param_names = SNCosmoModel.param_names
+
+        for param in odict.index.values:
+            if param in param_names:
+                mydict[param] = odict[param]
+        return mydict
+    
+    def SN(self, snid, timeRange='model'):
+        mySNParams = self.snParams.ix[snid]
+        if self.angularUnits == 'radians':
+            myra = np.radians(mySNParams.snra)
+            mydec = np.decdians(mySNPadecms.sndec)
+        elif self.angularUnits = 'degrees':
+            myra = mySNParams.snra
+            mydec = mySNPadecms.sndec
+        sn = SNObject(ra=myra, dec=mydec)
+        sncosmo_params = self.getSNCosmoParamDict(mySNParams, sn)
+        sn.set(**sncosmo_params)
+        return sn
+    
+    def lc(self, snid):
+        sn = self.SN(snid, timeRange='model')
+        lcMinTime = sn.mintime()
+        lcMaxTime = sn.maxtime()
+        # lcMinTime = self.SN(snid, timeRange='model').mintime()
+        # lcMaxTime = self.SN(snid, timeRange='model').maxtime()
+        if lcMinTime is None or lcMaxTime is None:
+            df = self.pointings.copy()
+        else:
+            df = self.pointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime').copy()
+        df['snid'] = snid
+        fluxerr = np.zeros(len(df))
+        modelFlux = np.zeros(len(df))
+        for i, rowtuple in enumerate(df.iterrows()):
+            row = rowtuple[1]
+            # print(row['expMJD'], row['filter'], row['fiveSigmaDepth'])
+            bp = self.bandPasses[row['filter']]
+            modelFlux[i] = self.staticModelFlux(sn, row['expMJD'],
+                                                bandpassobject=bp)
+            fluxerr[i] = sn.catsimBandFluxError(time=row['expMJD'],
+                                                bandpassobject=bp,
+                                                fluxinMaggies=modelFlux[i],
+                                                m5=row['fiveSigmaDepth'])
+
+        rng = self.randomState
+        df['fluxerr'] = fluxerr
+        deviations = rng.normal(size=len(df))
+        df['deviations'] = deviations
+        df['zp'] = 0.
+        df['ModelFlux'] = modelFlux
+        df['flux'] = df['ModelFlux'] + df['deviations'] * df['fluxerr']
+        df['zpsys']= 'ab'
+        lc = df[['snid', 'expMJD', 'filter', 'ModelFlux', 'fieldID', 'flux', 'fluxerr',
+                 'zp', 'zpsys', 'fieldID']]
+        return LightCurve(lc)
+    
+    @staticmethod
+    def staticModelFlux(sn, time, bandpassobject):
+          return sn.catsimBandFlux(bandpassobject=bandpassobject,
+                                   time=time)
+    def modelFlux(self, snid, time, bandpassobject):
+        # assert len(times) == len(bands)
+        # flux = np.zeros(len(times))
+	sn = self.SN(snid)
+	return self.staticModelFlux(sn, time=time, bandpassobject=bandpassobject)
+        # return self.SN(snid).catsimBandFlux(bandpassobject=bandpassobject,
+        #                                    time=time)
+
+
+    def writeSNParams(self, paramFileName, IDVal=0):
+	"""
+	Write the dataframe `self.snParams` to a file 
+
+	Parameters
+	----------
+	paramFileName : Instance of string
+	    paramFileName
+	IDVal : integer
+	    used as a key to write a group
+	"""
+
+        if paramFileName.endswith('.hdf'):
+            self.snParams.to_hdf(paramFileName, key='{}'.format(IDVal))
+        else:
+            raise NotImplementedError('Only methods to write to hdf files'
+                                      'implemented')
+
+    def writeSN(self, snid, fileName, IDVal=0, timeRange='model'):
+        """
+        Write light curve of SN to disc
+
+        Parameters
+        ----------
+        snid : int/string
+            SN id of SN 
+        fileName : string, mandatory
+
+        timeRange : string, optional, defaults to model
+            time range over which the light curve is written to disk
+
+        """
+        lc = self.lc(snid)
+        df = lc.lightCurve 
+        df['band'] = df['band'].astype(str)
+        with pd.get_store(fileName) as store:
+            store.append('tile_{}'.format(IDVal), df)
+
+class TiledSimulation(EntireSimulation):
+
+    def __init__(self,
+		 paramDF,
+                 NSIDE,
+                 tileID,
+                 hpOpSim,
+		 rng=None,
+                 allPointings=None,
+                 timeRange=None):
+	"""
+	Parameters
+	----------
+	paramDF
+	"""
+	self.tileID = tileID
+        self._randomState = rng
+	if self._randomState is None:
+	    self._randomState = np.random.RandomState(self.tileID)
+        self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
+        self.fieldArea = self.Tiling.area(self.tileID)
+        self.columns = ('expMJD', 'filter', 'fieldID', 'fiveSigmaDepth')
+        self.tilePointings = self.Tiling.pointingSequenceForTile(self.tileID, 
+                                                                 allPointings=allPointings,
+                                                                 columns=self.columns)
+	super(TiledSimulation, self).__init__(rng=self._randomState,
+					      pointings=self.tilePointings,
+					      paramsDF=paramDF)
+
 class SimulationTile(Universe):
     def __init__(self,
                  paramDist,
@@ -23,9 +200,10 @@ class SimulationTile(Universe):
                  tileID,
                  hpOpSim,
                  allPointings=None,
-                 timeRange=None):
+                 timeRange=None,
+                 angularUnits='radians'):
 
-        self._randomState = None
+        self._randomState = np.random.RandomState(self.tileID)
         self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
         self.tileID = tileID
         self.fieldArea = self.Tiling.area(tileID)
@@ -216,3 +394,5 @@ class SimulationTile(Universe):
         df['band'] = df['band'].astype(str)
         with pd.get_store(fileName) as store:
             store.append('tile_{}'.format(self.tileID), df)
+
+

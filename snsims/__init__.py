@@ -13,3 +13,4 @@ from .paramDistribution import *
 from .simulations import *
 from .aliases import aliasDictionary, mapSeq2Standard
 from .lightcurve import *
+from .samplingGalaxies import *
