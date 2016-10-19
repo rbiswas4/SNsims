@@ -362,7 +362,7 @@ class TwinklesRates(PowerLawRates):
         if self._selectedGals is None:
             df = self.galsdf.query('hostAssignmentRandom < probHist')
             df.galtileid = df.galtileid.astype(int)
-            df['snid'] = df.galtileid * 1000000 + np.arange(len(df))
+            df['snid'] = df.id
         else:
             df = self._selectedGals
         return df
