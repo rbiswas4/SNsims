@@ -3,6 +3,7 @@ Module with concrete implementations of functions important for sampling
 parameters
 """
 from __future__ import absolute_import, print_function
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 import healpy as hp
@@ -373,11 +374,13 @@ class TwinklesRates(PowerLawRates):
         return self.selectedGals.redshift.values
 
 class CatSimPositionSampling(object):
-    def __init__(self, rng, galdf):
+    def __init__(self, rng, galdf, snAngularUnits='degrees'):
         self.galdf = galdf.copy()
         self.rng = rng
         self.ss = SersicSamples(rng=self.rng)
         self.radianOverArcSec = np.pi / 180.0 / 3600.
+        self.snAngularUnits=snAngularUnits
+
     
     def f1(self, x):
         return self.ss.sampleRadius(x)[0]
@@ -422,14 +425,26 @@ class CatSimPositionSampling(object):
             self.galdf[['DeltaDecDisk', 'DeltaDecBulge']].apply(np.nansum, axis=1)\
             + self.galdf.decJ2000
 
+        if self.snAngularUnits == 'degrees':
+            self.galdf[['snra', 'sndec']] = \
+                    self.galdf[['snra', 'sndec']].apply(np.degrees)
+        elif self.snAngularUnits =='radians':
+            pass
+        else :
+            raise NotImplementedError('conversion to snAngularUnits {} not implemented', self.snAngularUnits)
+
 class TwinklesSim(TwinklesRates):
+
     def __init__(self, catsimgaldf, rng, fieldArea, cosmo, agnGalids=None, numBins=24,
                  rate_alpha=0.0026, rate_beta=1.5, zlower=1.0e-7, zhigher=1.2,
                  zbinEdges=None, tripp_alpha=0.11, tripp_beta=3.14):
-        TwinklesRates.__init__(self, gals, rng=rng, cosmo=cosmo, fieldArea=TwinklesArea, 
-                               agnGalids=agngaltileids, alpha=rate_alpha, beta=rate_beta,
-                               zlower=zlower, zhigher=1.2, numBins=numBins, zbinEdges=None,
-                               skyFraction=None)
+        super(TwinklesSim, self).__init__(catsimgaldf, rng=rng,
+                                          cosmo=cosmo, fieldArea=fieldArea,
+                                          agnGalids=agnGalids,
+                                          alpha=rate_alpha, beta=rate_beta,
+                                          zlower=zlower, zhigher=1.2,
+                                          numBins=numBins, zbinEdges=None,
+                                          skyFraction=None)
         self.cosmo = cosmo
         self.beta_rate = deepcopy(self.beta)
         self.alpha_rate = deepcopy(self.alpha)
