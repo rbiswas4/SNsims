@@ -38,7 +38,7 @@ class EntireSimulation(Universe):
     snParams : `pd.DataFrame`
 
     """
-    def __init__(self, rng, pointings, paramsDF, angularUnits='radians'):
+    def __init__(self, rng, pointings, paramsDF, angularUnits='degrees'):
         self.pointings = pointings
         self._paramsDf = paramsDF
         self._rng = rng
@@ -66,11 +66,11 @@ class EntireSimulation(Universe):
     def SN(self, snid, timeRange='model'):
         mySNParams = self.snParams.ix[snid]
         if self.angularUnits == 'radians':
-            myra = np.radians(mySNParams.snra)
-            mydec = np.decdians(mySNPadecms.sndec)
+            myra = np.degees(mySNParams.snra)
+            mydec = np.degrees(mySNParams.sndec)
         elif self.angularUnits == 'degrees':
             myra = mySNParams.snra
-            mydec = mySNPadecms.sndec
+            mydec = mySNParams.sndec
         sn = SNObject(ra=myra, dec=mydec)
         sncosmo_params = self.getSNCosmoParamDict(mySNParams, sn)
         sn.set(**sncosmo_params)
