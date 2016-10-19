@@ -86,7 +86,6 @@ class EntireSimulation(Universe):
             df = self.pointings.copy()
         else:
             df = self.pointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime').copy()
-        df['snid'] = snid
         fluxerr = np.zeros(len(df))
         modelFlux = np.zeros(len(df))
         for i, rowtuple in enumerate(df.iterrows()):
@@ -106,6 +105,7 @@ class EntireSimulation(Universe):
         df['deviations'] = deviations
         df['zp'] = 0.
         df['ModelFlux'] = modelFlux
+        df['snid'] = snid
         df['flux'] = df['ModelFlux'] + df['deviations'] * df['fluxerr']
         df['zpsys']= 'ab'
         lc = df[['snid', 'expMJD', 'filter', 'ModelFlux', 'flux', 'fluxerr',
