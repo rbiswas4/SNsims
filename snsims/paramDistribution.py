@@ -437,7 +437,7 @@ class TwinklesSim(TwinklesRates):
 
     def __init__(self, catsimgaldf, rng, fieldArea, cosmo, agnGalids=None, numBins=24,
                  rate_alpha=0.0026, rate_beta=1.5, zlower=1.0e-7, zhigher=1.2,
-                 zbinEdges=None, tripp_alpha=0.11, tripp_beta=3.14):
+                 zbinEdges=None, tripp_alpha=0.11, tripp_beta=3.14, mjdmin=0.):
         super(TwinklesSim, self).__init__(catsimgaldf, rng=rng,
                                           cosmo=cosmo, fieldArea=fieldArea,
                                           agnGalids=agnGalids,
@@ -454,6 +454,7 @@ class TwinklesSim(TwinklesRates):
         self.catsimpos = CatSimPositionSampling(rng=self.rng, 
                                             galdf=self.selectedGals)
         self.catsimpos.addPostions()
+        self.mjdmin = mjdmin
         self.salt2params = SimpleSALTDist(numSN=self.numSN, 
                                           zSamples=self.zSamples, 
                                           rng=self.rng,
@@ -462,7 +463,7 @@ class TwinklesSim(TwinklesRates):
                                           alpha=self.tripp_alpha,
                                           beta=self.tripp_beta,
                                           surveyDuration=10.,
-                                          mjdmin=59580.)
+                                          mjdmin=self.mjdmin)
         self._snparamdf = None
     @property
     def snparamdf(self):
