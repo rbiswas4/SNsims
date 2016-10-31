@@ -6,6 +6,7 @@ install:
   - source eups-setups.sh
   - setup lsst_sims
   - travis_wait 5 ./continuous_integration/install_opsimsummary.sh
+  - travis_wait 5 ./continuous_integration/install_opsimsummary.sh
   - travis_wait 5 ./continuous_integration/install_analyzeSN.sh
   - pip install pytest
   - pip install future
