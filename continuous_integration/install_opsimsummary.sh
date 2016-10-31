@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 pd=$PWD
 cd ..
-fit clone https://github.com/esheldon/fitsio.git
+git clone https://github.com/esheldon/fitsio.git
 cd fitsio
 pyton setup.py install --user
 cd ..
