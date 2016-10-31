@@ -23,6 +23,7 @@ script:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - source eups-setups.sh
   - setup lsst_sims
+  - ./continuous_integration/install_opsimsummary.sh
   - python setup.py install 
   # - py.test --ignore=snsims_previous/ --cov-report= --cov=snsims tests
   - py.test --ignore=snsims_previous/ --cov=snsims --cov-report=term
