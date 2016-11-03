@@ -7,7 +7,6 @@ from opsimsummary import Tiling, HealpixTiles
 from analyzeSN import LightCurve
 from .universe import Universe
 from .paramDistribution import SimpleSALTDist
-# from .lightcurve import LightCurve
 import os
 import numpy as np
 import pandas as pd
