@@ -7,12 +7,12 @@ install:
   - setup lsst_sims
   - travis_wait 5 ./continuous_integration/install_opsimsummary.sh
   - pip install pytest
-  - travis_wait 5 ./continuous_integration/install_analyzeSN.sh
   - pip install future
   - pip install pytest-cov
   - pip install python-coveralls
   - pip install coveralls
   - pip install coverage
+  - travis_wait 5 ./continuous_integration/install_analyzeSN.sh
 cache:
   directories:
   - $HOME/miniconda.tarball
