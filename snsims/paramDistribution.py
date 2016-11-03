@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import healpy as hp
 import sncosmo
-from opsimsummary import HealpixTiles
+from .healpixTiles import HealpixTiles
 from .populationParamSamples import (RateDistributions,
                                      SALT2Parameters,
                                      PositionSamples)
@@ -452,7 +452,8 @@ class TwinklesSim(TwinklesRates):
         self.numSN = len(self.zSamples)
         self.tripp_alpha = tripp_alpha
         self.tripp_beta = tripp_beta
-                                            galdf=self.selectedGals)
+        self.catsimpos = CatSimPositionSampling(rng=self.rng, 
+                                                galdf=self.selectedGals)
         self.catsimpos.addPostions()
         self.mjdmin = mjdmin
         self.salt2params = SimpleSALTDist(numSN=self.numSN, 
