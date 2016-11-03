@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import healpy as hp
 import sncosmo
-from .healpixTiles import HealpixTiles
+from opsimsummary import HealpixTiles
 from .populationParamSamples import (RateDistributions,
                                      SALT2Parameters,
                                      PositionSamples)
