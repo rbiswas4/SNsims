@@ -3,12 +3,10 @@ from __future__ import absolute_import, print_function, division
 from future.utils import with_metaclass
 import abc
 
-from .tessellations import Tiling
+from opsimsummary import Tiling, HealpixTiles
+from analyzeSN import LightCurve
 from .universe import Universe
 from .paramDistribution import SimpleSALTDist
-from .healpixTiles import HealpixTiles
-# from .lightcurve import LightCurve
-from analyzeSN import LightCurve
 import os
 import numpy as np
 import pandas as pd

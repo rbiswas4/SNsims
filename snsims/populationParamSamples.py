@@ -5,7 +5,7 @@ from __future__ import absolute_import, print_function, division
 from future.utils import with_metaclass
 import abc
 import numpy as np
-from .tessellations import Tiling
+from opsimsummary import Tiling
 
 
 __all__ = ['SNParamDistribution', 'RateDistributions', 'SALT2Parameters',

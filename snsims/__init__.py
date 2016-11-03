@@ -2,8 +2,7 @@ from __future__ import absolute_import
 
 from .version import __VERSION__
 # Tilings
-from .tessellations import *
-from .healpixTiles import *
+from opsimsummary import Tiling, HealpixTiles
 # Universe and Rules
 from .universe import *
 # Population Distributions
