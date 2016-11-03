@@ -6,12 +6,14 @@ install:
   - source eups-setups.sh
   - setup lsst_sims
   - travis_wait 5 ./continuous_integration/install_opsimsummary.sh
+  - pip  install fitsio
   - pip install pytest
   - pip install future
   - pip install pytest-cov
   - pip install python-coveralls
   - pip install coveralls
   - pip install coverage
+  - travis_wait 5 ./continuous_integration/install_analyzeSN.sh
 cache:
   directories:
   - $HOME/miniconda.tarball
@@ -22,11 +24,12 @@ script:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - source eups-setups.sh
   - setup lsst_sims
+  - ./continuous_integration/install_opsimsummary.sh
   - python setup.py install 
   # - py.test --ignore=snsims_previous/ --cov-report= --cov=snsims tests
   - py.test --ignore=snsims_previous/ --cov=snsims --cov-report=term
   - coverage run -m py.test --ignore=snsims_previous 
-  #- nosetests -v --with-coverage --cover-erase --cover-tests --cover-package=snsims --cover-inclusive --cover-html --cover-html-dir=doc/coverage
+    #- nosetests -v --with-coverage --cover-erase --cover-tests --cover-package=snsims --cover-inclusive --cover-html --cover-html-dir=doc/coverage
   - nosetests --with-doctest -v -w snsims
 
 after_success:
