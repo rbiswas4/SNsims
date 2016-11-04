@@ -16,7 +16,42 @@ from astropy.cosmology import Planck15
 from .samplingGalaxies import SersicSamples
 
 __all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples', 'TwinklesRates',
-           'CatSimPositionSampling', 'TwinklesSim']
+           'CatSimPositionSampling', 'TwinklesSim', 'SALT2_MMDist', 'GMM_SALT2Params']
+
+def double_gauss(mu, sigp, sigm, size):
+    """Double Gaussian distribution. Note: mu is the mode and not the mean."""
+    
+    sigm = abs(sigm) # Just in case
+
+    p = np.array([sigp, sigm], dtype=np.float64) # probability of one side is proportional to sigma on that side
+    p /= sum(p)
+
+
+    sig = np.random.choice([sigp, -sigm], size = size, replace = True, p = p)
+    
+    return abs(np.random.normal(size = size))*sig + mu
+
+def SALT2_MMDist(numSN,
+                cm=-0.0474801042369, cs1=0.0965032273527, cs2=0.042844366359,
+                x1m=0.872727291354, x1s1=0.358731835038, x1s2=1.42806797468,
+                mm=10.701690617, ms1=0.334359086569, ms2=1.0750402101,
+                mBm=-19.0199168813, mc=-0.0838387899933, mt=10.,
+                cc=3.20907949118, cx1=-0.137042055737):
+    """
+    Generates "noise"-free mB, x1, c. Trained on JLA SALT2-4 SDSS z < 0.2 and
+    SNLS z < 0.5. Very simple model with linear alpha/beta and same
+    distribution irrspective of host-mass. mB needs h=0.7 distance modulus
+    added to it.
+
+    From D. Rubin
+    """
+    color = double_gauss(cm, cs1, cs2, size=numSN)
+    x1 = double_gauss(x1m, x1s1, x1s2, size=numSN)
+    mass = double_gauss(mm, ms1, ms2, size=numSN)
+
+    mB = mBm + mc * (mass > 10.) + cc * color + cx1 * x1
+
+    return mB, x1, color, mass
 
 class SimpleSALTDist(SALT2Parameters):
     """
@@ -93,6 +128,29 @@ class SimpleSALTDist(SALT2Parameters):
             self._paramSamples = df
         return self._paramSamples
 
+
+class GMM_SALT2Params(SimpleSALTDist):
+    """
+    """
+    def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
+                 Mdisp=0.15, rng=None, cosmo=Planck15, mjdmin=0., surveyDuration=10.):
+        SimpleSALTDist.__init(numSN, zSamples, snids=snids, alpha=alpha,
+                              beta=beta, rng=rng, cosmo=Planck15, mjdmin=0.
+                              surveyDuration=10., Mdisp=0.15)
+
+    @property
+    def paramSamples(self):
+        mB, x1, c, m = SALT2_MMDist(self.numSN)
+        self._paramSamples['c'] = c
+        self._paramSamples['x1'] = x1
+        self._paramSamples['mB'] = mB
+        x0 = np.zeros(len(mB))
+        for i, z in enumerate(self.zSamples):
+            model.set(z=z, x1=x1[i], c=c[i])
+            model.set_peakmag(mB[i], 'bessellB', 'ab')
+            x0[i] = model.get('x0')
+        self._paramSamples['x0'] = x0
+        return self._paramSamples
 class CoordSamples(PositionSamples, HealpixTiles):
     def __init__(self, nside, hpOpSim, rng):
         self.nside = nside
@@ -466,8 +524,12 @@ class TwinklesSim(TwinklesRates):
                                           surveyDuration=10.,
                                           mjdmin=self.mjdmin)
         self._snparamdf = None
+
     @property
     def snparamdf(self):
+        """
+        dataFrame with information about the object
+        """
         if self._snparamdf is None:
             self.salt2params.paramSamples.set_index('snid', inplace=True)
             self.catsimpos.galdf.set_index('snid', inplace=True)
