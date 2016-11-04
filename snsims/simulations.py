@@ -202,9 +202,9 @@ class SimulationTile(Universe):
                  timeRange=None,
                  angularUnits='radians'):
 
-        self._randomState = np.random.RandomState(self.tileID)
         self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
         self.tileID = tileID
+        self._randomState = np.random.RandomState(self.tileID)
         self.fieldArea = self.Tiling.area(tileID)
         self.zdist = rate(rng=self.randomState, fieldArea=self.fieldArea)
         self.zsamples = self.zdist.zSamples
