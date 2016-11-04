@@ -135,23 +135,30 @@ class GMM_SALT2Params(SimpleSALTDist):
     """
     def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
                  Mdisp=0.15, rng=None, cosmo=Planck15, mjdmin=0., surveyDuration=10.):
-        SimpleSALTDist.__init(numSN, zSamples, snids=snids, alpha=alpha,
+        super(self.__class__, self).__init__(numSN, zSamples, snids=snids, alpha=alpha,
                               beta=beta, rng=rng, cosmo=Planck15, mjdmin=0.,
                               surveyDuration=10., Mdisp=0.15)
 
     @property
     def paramSamples(self):
+        if self._paramSamples is not None:
+            return self._paramSamples
+        timescale = self.mjdmax - self.mjdmin
+        T0Vals = self.randomState.uniform(size=self.numSN) * timescale \
+            + self.mjdmin
         mB, x1, c, m = SALT2_MMDist(self.numSN)
-        self._paramSamples['c'] = c
-        self._paramSamples['x1'] = x1
-        self._paramSamples['mB'] = mB
         x0 = np.zeros(len(mB))
+        mB += self.randomState.normal(loc=0., scale=self.Mdisp,
+                                      size=self.numSN)
+        model = sncosmo.Model(source='SALT2')
         for i, z in enumerate(self.zSamples):
             model.set(z=z, x1=x1[i], c=c[i])
-            model.set_peakmag(mB[i], 'bessellB', 'ab')
+            model.source.set_peakmag(mB[i], 'bessellB', 'ab')
             x0[i] = model.get('x0')
-        self._paramSamples['x0'] = x0
+        df = pd.DataFrame(dict(x0=x0, x1=x1, c=c, mB=mB, z=self.zSamples))
+        self._paramSamples = df
         return self._paramSamples
+
 class CoordSamples(PositionSamples, HealpixTiles):
     def __init__(self, nside, hpOpSim, rng):
         self.nside = nside
