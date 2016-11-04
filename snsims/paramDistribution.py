@@ -16,7 +16,8 @@ from astropy.cosmology import Planck15
 from .samplingGalaxies import SersicSamples
 
 __all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples', 'TwinklesRates',
-           'CatSimPositionSampling', 'TwinklesSim', 'SALT2_MMDist', 'GMM_SALT2Params']
+           'CatSimPositionSampling', 'TwinklesSim', 'SALT2_MMDist',
+           'GMM_SALT2Params']
 
 def double_gauss(mu, sigp, sigm, size):
     """Double Gaussian distribution. Note: mu is the mode and not the mean."""
@@ -135,7 +136,7 @@ class GMM_SALT2Params(SimpleSALTDist):
     def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
                  Mdisp=0.15, rng=None, cosmo=Planck15, mjdmin=0., surveyDuration=10.):
         SimpleSALTDist.__init(numSN, zSamples, snids=snids, alpha=alpha,
-                              beta=beta, rng=rng, cosmo=Planck15, mjdmin=0.
+                              beta=beta, rng=rng, cosmo=Planck15, mjdmin=0.,
                               surveyDuration=10., Mdisp=0.15)
 
     @property
