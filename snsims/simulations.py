@@ -5,6 +5,7 @@ import abc
 
 from opsimsummary import Tiling, HealpixTiles
 from analyzeSN import LightCurve
+from analyzeSN import Photometry
 from .universe import Universe
 from .paramDistribution import SimpleSALTDist
 import os
@@ -89,8 +90,16 @@ class EntireSimulation(Universe):
             df = self.pointings.copy()
         else:
             df = self.pointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime').copy().reset_index()
-            if maxObsHistID is not None and ('obsHistID' in df.columns):
+            if maxObsHistID is None or ('obsHistID' in df.columns):
+                pass
+            else:
                 raise ValueError('Cannot index if obsHistID column not provided')
+        if maxObsHistID is not None:
+            idx = Photometry.pair_method(df.obsHistID.values,
+                                         snid,
+                                         maxObsHistID)
+        else:
+            idx = np.ones(len(df))
         fluxerr = np.zeros(len(df))
         modelFlux = np.zeros(len(df))
         for i, rowtuple in enumerate(df.iterrows()):
@@ -113,8 +122,9 @@ class EntireSimulation(Universe):
         df['snid'] = snid
         df['flux'] = df['ModelFlux'] + df['deviations'] * df['fluxerr']
         df['zpsys']= 'ab'
+        df['diaID']  = idx
 
-        lc = df[['snid', 'expMJD', 'filter', 'ModelFlux', 'flux', 'fluxerr',
+        lc = df[['diaID', 'snid', 'expMJD', 'filter', 'ModelFlux', 'flux', 'fluxerr',
                  'zp', 'zpsys', 'fieldID']]
         return LightCurve(lc)
     
