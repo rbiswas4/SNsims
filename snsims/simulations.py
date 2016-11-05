@@ -5,7 +5,6 @@ import abc
 
 from opsimsummary import Tiling, HealpixTiles
 from analyzeSN import LightCurve
-from analyzeSN import Photometry
 from .universe import Universe
 from .paramDistribution import SimpleSALTDist
 import os
@@ -16,6 +15,17 @@ from lsst.sims.catUtils.supernovae import SNObject
 
 __all__ = ['SimulationTile', 'EntireSimulation', 'TiledSimulation']
 
+class Photometry(object):
+    """
+    Temporary class standing in for the Photometry class in AnalyzeSN which is
+    currently in a branch
+    """
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def  pair_method(obsHistID, snid, maxObsHistID):
+        return snid * maxObsHistID + obsHistID
 class EntireSimulation(Universe):
     """
     Simulation of a set of SN from a set of telescope pointings
