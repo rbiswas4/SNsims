@@ -37,12 +37,14 @@ class EntireSimulation(Universe):
     snParams : `pd.DataFrame`
 
     """
-    def __init__(self, rng, pointings, paramsDF, angularUnits='degrees'):
+    def __init__(self, rng, pointings, paramsDF, angularUnits='degrees',
+                 maxObsHistID=None):
         self.pointings = pointings
         self._paramsDf = paramsDF
         self._rng = rng
         self.angularUnits = angularUnits
         self.bandPasses = BandpassDict.loadTotalBandpassesFromFiles()
+        self.maxObsHistID = maxObsHistID
     
     @property
     def randomState(self):
@@ -75,7 +77,9 @@ class EntireSimulation(Universe):
         sn.set(**sncosmo_params)
         return sn
     
-    def lc(self, snid):
+    def lc(self, snid, maxObsHistID=None):
+        if maxObsHistID is None:
+            maxObsHistID = self.maxObsHistID
         sn = self.SN(snid, timeRange='model')
         lcMinTime = sn.mintime()
         lcMaxTime = sn.maxtime()
@@ -84,7 +88,9 @@ class EntireSimulation(Universe):
         if lcMinTime is None or lcMaxTime is None:
             df = self.pointings.copy()
         else:
-            df = self.pointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime').copy()
+            df = self.pointings.query('expMJD < @lcMaxTime and expMJD > @lcMinTime').copy().reset_index()
+            if maxObsHistID is not None and ('obsHistID' in df.columns):
+                raise ValueError('Cannot index if obsHistID column not provided')
         fluxerr = np.zeros(len(df))
         modelFlux = np.zeros(len(df))
         for i, rowtuple in enumerate(df.iterrows()):
@@ -107,6 +113,7 @@ class EntireSimulation(Universe):
         df['snid'] = snid
         df['flux'] = df['ModelFlux'] + df['deviations'] * df['fluxerr']
         df['zpsys']= 'ab'
+
         lc = df[['snid', 'expMJD', 'filter', 'ModelFlux', 'flux', 'fluxerr',
                  'zp', 'zpsys', 'fieldID']]
         return LightCurve(lc)
