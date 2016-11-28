@@ -239,8 +239,18 @@ class PowerLawRates(RateDistributions):
         cosmo : Instance of `astropy.cosmology` class, optional, defaults to Planck15
             data structure specifying the cosmological parameters 
         alpha : float, optional, defaults to 2.6e-5
+            constant amplitude in SN rate powerlaw
         beta : float, optional, defaults to 1.5
-            parameter in expression  
+            constant exponent in SN rate powerlaw
+        surveyDuration : float, units of years, defaults to 10.
+            duration of the survey in units of years
+        fieldArea : float, units of degree sq, defaults to None
+            area of the field over which supernovae are being simulated in
+            units of square degrees.
+        skyFraction : float, optional, defaults to None
+            Alternative way of specifying fieldArea by supplying the unitless
+            ratio between sky area where the supernovae are being simulated and
+            accepting the default `None` for `fieldArea`
         """
         self.alpha = alpha
         self.beta = beta
