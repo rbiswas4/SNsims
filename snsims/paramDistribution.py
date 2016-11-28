@@ -20,223 +20,205 @@ __all__ = ['PowerLawRates', 'SimpleSALTDist', 'CoordSamples', 'TwinklesRates',
            'GMM_SALT2Params']
 
 def double_gauss(mu, sigp, sigm, size):
-"""Double Gaussian distribution. Note: mu is the mode and not the mean."""
+    """Double Gaussian distribution. Note: mu is the mode and not the mean."""
+    
+    sigm = abs(sigm) # Just in case
 
-sigm = abs(sigm) # Just in case
-
-p = np.array([sigp, sigm], dtype=np.float64) # probability of one side is proportional to sigma on that side
-p /= sum(p)
+    p = np.array([sigp, sigm], dtype=np.float64) # probability of one side is proportional to sigma on that side
+    p /= sum(p)
 
 
-sig = np.random.choice([sigp, -sigm], size = size, replace = True, p = p)
-
-return abs(np.random.normal(size = size))*sig + mu
+    sig = np.random.choice([sigp, -sigm], size = size, replace = True, p = p)
+    
+    return abs(np.random.normal(size = size))*sig + mu
 
 def SALT2_MMDist(numSN,
-            cm=-0.0474801042369, cs1=0.0965032273527, cs2=0.042844366359,
-            x1m=0.872727291354, x1s1=0.358731835038, x1s2=1.42806797468,
-            mm=10.701690617, ms1=0.334359086569, ms2=1.0750402101,
-            mBm=-19.0199168813, mc=-0.0838387899933, mt=10.,
-            cc=3.20907949118, cx1=-0.137042055737):
-"""
-Generates "noise"-free mB, x1, c. Trained on JLA SALT2-4 SDSS z < 0.2 and
-SNLS z < 0.5. Very simple model with linear alpha/beta and same
-distribution irrspective of host-mass. mB needs h=0.7 distance modulus
-added to it.
+                cm=-0.0474801042369, cs1=0.0965032273527, cs2=0.042844366359,
+                x1m=0.872727291354, x1s1=0.358731835038, x1s2=1.42806797468,
+                mm=10.701690617, ms1=0.334359086569, ms2=1.0750402101,
+                mBm=-19.0199168813, mc=-0.0838387899933, mt=10.,
+                cc=3.20907949118, cx1=-0.137042055737):
+    """
+    Generates "noise"-free mB, x1, c. Trained on JLA SALT2-4 SDSS z < 0.2 and
+    SNLS z < 0.5. Very simple model with linear alpha/beta and same
+    distribution irrspective of host-mass. mB needs h=0.7 distance modulus
+    added to it.
 
-From D. Rubin
-"""
-color = double_gauss(cm, cs1, cs2, size=numSN)
-x1 = double_gauss(x1m, x1s1, x1s2, size=numSN)
-mass = double_gauss(mm, ms1, ms2, size=numSN)
+    From D. Rubin
+    """
+    color = double_gauss(cm, cs1, cs2, size=numSN)
+    x1 = double_gauss(x1m, x1s1, x1s2, size=numSN)
+    mass = double_gauss(mm, ms1, ms2, size=numSN)
 
-mB = mBm + mc * (mass > 10.) + cc * color + cx1 * x1
+    mB = mBm + mc * (mass > 10.) + cc * color + cx1 * x1
 
-return mB, x1, color, mass
+    return mB, x1, color, mass
 
 class SimpleSALTDist(SALT2Parameters):
-"""
-Concrete Implementation of `SALT2Parameters`
-"""
-def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
-             cSigma=0.1, x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None,
-             cosmo=Planck15, mjdmin=0., surveyDuration=10.):
     """
+    Concrete Implementation of `SALT2Parameters`
     """
-    self._snids = snids
-    self.alpha = alpha
-    self.beta = beta
-    self._numSN = numSN
-    self.zSamples = zSamples
-    self.x1Sigma = x1Sigma
-    self.cSigma = cSigma
-    self._rng = rng
-    self.centralMabs = meanM
-    self.Mdisp = Mdisp
-    self._paramSamples = None
-    self.cosmo = cosmo
-    self.mjdmin = mjdmin
-    self.surveyDuration = surveyDuration
+    def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
+                 cSigma=0.1, x1Sigma=1.0, meanM=-19.3, Mdisp=0.15, rng=None,
+                 cosmo=Planck15, mjdmin=0., surveyDuration=10.):
+        """
+        """
+        self._snids = snids
+        self.alpha = alpha
+        self.beta = beta
+        self._numSN = numSN
+        self.zSamples = zSamples
+        self.x1Sigma = x1Sigma
+        self.cSigma = cSigma
+        self._rng = rng
+        self.centralMabs = meanM
+        self.Mdisp = Mdisp
+        self._paramSamples = None
+        self.cosmo = cosmo
+        self.mjdmin = mjdmin
+        self.surveyDuration = surveyDuration
 
-@property
-def mjdmax(self):
-    return self.mjdmin + self.surveyDuration * 365.0
+    @property
+    def mjdmax(self):
+        return self.mjdmin + self.surveyDuration * 365.0
 
-@property
-def snids(self):
-    if self._snids is None:
-        self._snids = np.arange(self.numSN)
-    return self._snids
+    @property
+    def snids(self):
+        if self._snids is None:
+            self._snids = np.arange(self.numSN)
+        return self._snids
 
-@property
-def numSN(self):
-    if self._numSN is None:
-        if self.zSamples is None:
-            raise ValueError('Both zSamples and numSN cannot be None')
-        self._numSN = len(self.zSamples)
-    return self._numSN
+    @property
+    def numSN(self):
+        if self._numSN is None:
+            if self.zSamples is None:
+                raise ValueError('Both zSamples and numSN cannot be None')
+            self._numSN = len(self.zSamples)
+        return self._numSN
 
-@property
-def randomState(self):
-    if self._rng is None:
-        raise NotImplementedError('rng must be provided')
-    return self._rng
+    @property
+    def randomState(self):
+        if self._rng is None:
+            raise NotImplementedError('rng must be provided')
+        return self._rng
 
-@property
-def paramSamples(self):
-    if self._paramSamples is None:
-        timescale = self.mjdmax - self.mjdmin
-        T0Vals = self.randomState.uniform(size=self.numSN) * timescale \
-                + self.mjdmin
-        cvals = self.randomState.normal(loc=0., scale=self.cSigma,
-                                        size=self.numSN)
-        x1vals = self.randomState.normal(loc=0., scale=self.x1Sigma,
-                                        size=self.numSN)
-        M = - self.alpha * x1vals - self.beta * cvals
-        Mabs = self.centralMabs + M + self.randomState.normal(loc=0., scale=self.Mdisp,
-                                           size=self.numSN)
-        x0 = np.zeros(self.numSN)
-        mB = np.zeros(self.numSN)
-        model = sncosmo.Model(source='SALT2')
-        for i, z in enumerate(self.zSamples):
-            model.set(z=z, x1=x1vals[i], c=cvals[i])
-            model.set_source_peakabsmag(Mabs[i], 'bessellB', 'ab',
-                                        cosmo=self.cosmo)
-            x0[i] = model.get('x0')
-            mB[i] = model.source.peakmag('bessellB', 'ab')
-        df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1vals, c=cvals, M=M, Mabs=Mabs,
-                               t0=T0Vals, z=self.zSamples, snid=self.snids))
-        self._paramSamples = df
-    return self._paramSamples
+    @property
+    def paramSamples(self):
+        if self._paramSamples is None:
+            timescale = self.mjdmax - self.mjdmin
+            T0Vals = self.randomState.uniform(size=self.numSN) * timescale \
+                    + self.mjdmin
+            cvals = self.randomState.normal(loc=0., scale=self.cSigma,
+                                            size=self.numSN)
+            x1vals = self.randomState.normal(loc=0., scale=self.x1Sigma,
+                                            size=self.numSN)
+            M = - self.alpha * x1vals - self.beta * cvals
+            Mabs = self.centralMabs + M + self.randomState.normal(loc=0., scale=self.Mdisp,
+                                               size=self.numSN)
+            x0 = np.zeros(self.numSN)
+            mB = np.zeros(self.numSN)
+            model = sncosmo.Model(source='SALT2')
+            for i, z in enumerate(self.zSamples):
+                model.set(z=z, x1=x1vals[i], c=cvals[i])
+                model.set_source_peakabsmag(Mabs[i], 'bessellB', 'ab',
+                                            cosmo=self.cosmo)
+                x0[i] = model.get('x0')
+                mB[i] = model.source.peakmag('bessellB', 'ab')
+            df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1vals, c=cvals, M=M, Mabs=Mabs,
+                                   t0=T0Vals, z=self.zSamples, snid=self.snids))
+            self._paramSamples = df
+        return self._paramSamples
 
 
 class GMM_SALT2Params(SimpleSALTDist):
-"""
-"""
-def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
-             Mdisp=0.15, rng=None, cosmo=Planck15, mjdmin=0., surveyDuration=10.):
-    super(self.__class__, self).__init__(numSN, zSamples, snids=snids, alpha=alpha,
-                          beta=beta, rng=rng, cosmo=Planck15, mjdmin=0.,
-                          surveyDuration=10., Mdisp=0.15)
+    """
+    """
+    def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
+                 Mdisp=0.15, rng=None, cosmo=Planck15, mjdmin=0., surveyDuration=10.):
+        super(self.__class__, self).__init__(numSN, zSamples, snids=snids, alpha=alpha,
+                              beta=beta, rng=rng, cosmo=Planck15, mjdmin=0.,
+                              surveyDuration=10., Mdisp=0.15)
 
-@property
-def paramSamples(self):
-    if self._paramSamples is not None:
+    @property
+    def paramSamples(self):
+        if self._paramSamples is not None:
+            return self._paramSamples
+        timescale = self.mjdmax - self.mjdmin
+        T0Vals = self.randomState.uniform(size=self.numSN) * timescale \
+            + self.mjdmin
+        mB, x1, c, m = SALT2_MMDist(self.numSN)
+        x0 = np.zeros(len(mB))
+        mB += self.randomState.normal(loc=0., scale=self.Mdisp,
+                                      size=self.numSN)
+        model = sncosmo.Model(source='SALT2')
+        for i, z in enumerate(self.zSamples):
+            model.set(z=z, x1=x1[i], c=c[i])
+            model.source.set_peakmag(mB[i], 'bessellB', 'ab')
+            x0[i] = model.get('x0')
+        df = pd.DataFrame(dict(x0=x0, x1=x1, c=c, mB=mB, z=self.zSamples))
+        self._paramSamples = df
         return self._paramSamples
-    timescale = self.mjdmax - self.mjdmin
-    T0Vals = self.randomState.uniform(size=self.numSN) * timescale \
-        + self.mjdmin
-    mB, x1, c, m = SALT2_MMDist(self.numSN)
-    x0 = np.zeros(len(mB))
-    mB += self.randomState.normal(loc=0., scale=self.Mdisp,
-                                  size=self.numSN)
-    model = sncosmo.Model(source='SALT2')
-    for i, z in enumerate(self.zSamples):
-        model.set(z=z, x1=x1[i], c=c[i])
-        model.source.set_peakmag(mB[i], 'bessellB', 'ab')
-        x0[i] = model.get('x0')
-    df = pd.DataFrame(dict(x0=x0, x1=x1, c=c, mB=mB, z=self.zSamples))
-    self._paramSamples = df
-    return self._paramSamples
 
 class CoordSamples(PositionSamples, HealpixTiles):
-def __init__(self, nside, hpOpSim, rng):
-    self.nside = nside
-    self.nside = nside
-    super(self.__class__, self).__init__(nside=nside, healpixelizedOpSim=hpOpSim)
-    self._rng = rng
-@property
-def randomState(self):
-    if self._rng is None:
-        raise ValueError('self._rng should not be None')
-    return self._rng
-def _angularSamples(self, phi_c, theta_c, radius, numSamples, tileID):
-    phi, theta = super(self.__class__, self).samplePatchOnSphere(phi=phi_c,
+    def __init__(self, nside, hpOpSim, rng):
+        self.nside = nside
+        self.nside = nside
+        super(self.__class__, self).__init__(nside=nside, healpixelizedOpSim=hpOpSim)
+        self._rng = rng
+    @property
+    def randomState(self):
+        if self._rng is None:
+            raise ValueError('self._rng should not be None')
+        return self._rng
+    def _angularSamples(self, phi_c, theta_c, radius, numSamples, tileID):
+        phi, theta = super(self.__class__, self).samplePatchOnSphere(phi=phi_c,
 								     theta=theta_c, delta=radius, 
-                                                                 size=numSamples, rng=self.randomState)
-    tileIds = hp.ang2pix(nside=self.nside, theta=np.radians(theta),
+                                                                     size=numSamples, rng=self.randomState)
+        tileIds = hp.ang2pix(nside=self.nside, theta=np.radians(theta),
 			     phi=np.radians(phi), nest=True)
-    inTile = tileIds == tileID
-    return phi[inTile], theta[inTile]
-    
-def positions(self, tileID, numSamples):
-    res_phi = np.zeros(numSamples)
-    res_theta = np.zeros(numSamples)
-    ang = hp.pix2ang(nside=self.nside, ipix=tileID, nest=True)
-    radius = np.degrees(np.sqrt(hp.nside2pixarea(self.nside) / np.pi))
-    phi_c, theta_c = np.degrees(ang[::-1])
-    num_already = 0
-    while numSamples > 0:
-        phi, theta = self._angularSamples(phi_c, theta_c, radius=2*radius,
+        inTile = tileIds == tileID
+        return phi[inTile], theta[inTile]
+        
+    def positions(self, tileID, numSamples):
+        res_phi = np.zeros(numSamples)
+        res_theta = np.zeros(numSamples)
+        ang = hp.pix2ang(nside=self.nside, ipix=tileID, nest=True)
+        radius = np.degrees(np.sqrt(hp.nside2pixarea(self.nside) / np.pi))
+        phi_c, theta_c = np.degrees(ang[::-1])
+        num_already = 0
+        while numSamples > 0:
+            phi, theta = self._angularSamples(phi_c, theta_c, radius=2*radius,
 					      numSamples=numSamples,
 					      tileID=tileID)
-        num_obtained = len(phi)
-        res_phi[num_already:num_obtained + num_already] = phi
-        res_theta[num_already:num_obtained + num_already] = theta
-        num_already += num_obtained
-        numSamples -= num_obtained
-    return res_phi, res_theta
+            num_obtained = len(phi)
+            res_phi[num_already:num_obtained + num_already] = phi
+            res_theta[num_already:num_obtained + num_already] = theta
+            num_already += num_obtained
+            numSamples -= num_obtained
+        return res_phi, res_theta
 
 
 class PowerLawRates(RateDistributions):
-"""
-This class is a concrete implementation of `RateDistributions` with the
-following properties:
-- The SN rate : The SN rate is a single power law with numerical
-    coefficients (alpha, beta)  passed into the instantiation. The rate is
-    the number of SN at redshift z per comoving volume per unit observer
-    time over the entire sky expressed in units of numbers/Mpc^3/year 
-- A binning in redshift is used to perform the calculation of numbers of SN.
-    This is assumed
-- The expected number of SN in each of these redshift bins is computed using
-    the rate above, and a cosmology to compute the comoving volume for the
-    redshift bin
-- The numbers of SN are determined by a Poisson Distribution about the
-    expected number in each redshift bin,  determined with a random state
-    passed in as an argument. This number must be integral.
-- It is assumed that the change of rates and volume within a redshift bin
-    is negligible enough that samples to the true distribution may be drawn
-    by obtaining number of SN samples of z from a uniform distribution
-    within the z bin.
+    """
+    This class is a concrete implementation of `RateDistributions` with the
+    following properties:
+    - The SN rate : The SN rate is a single power law with numerical
+        coefficients (alpha, beta)  passed into the instantiation. The rate is
+        the number of SN at redshift z per comoving volume per unit observer
+        time over the entire sky expressed in units of numbers/Mpc^3/year 
+    - A binning in redshift is used to perform the calculation of numbers of SN.
+        This is assumed
+    - The expected number of SN in each of these redshift bins is computed using
+        the rate above, and a cosmology to compute the comoving volume for the
+        redshift bin
+    - The numbers of SN are determined by a Poisson Distribution about the
+        expected number in each redshift bin,  determined with a random state
+        passed in as an argument. This number must be integral.
+    - It is assumed that the change of rates and volume within a redshift bin
+        is negligible enough that samples to the true distribution may be drawn
+        by obtaining number of SN samples of z from a uniform distribution
+        within the z bin.
 
-    Parameters
-    ----------
-    rng : instance of `np.random.RandomState`
-    cosmo : Instance of `astropy.cosmology` class, optional, defaults to Planck15
-        data structure specifying the cosmological parameters 
-    alpha : float, optional, defaults to 2.6e-5
-        constant amplitude in SN rate powerlaw
-    beta : float, optional, defaults to 1.5
-        constant exponent in SN rate powerlaw
-    surveyDuration : float, units of years, defaults to 10.
-        duration of the survey in units of years
-    fieldArea : float, units of degree sq, defaults to None
-        area of the field over which supernovae are being simulated in
-        units of square degrees.
-    skyFraction : float, optional, defaults to None
-        Alternative way of specifying fieldArea by supplying the unitless
-        ratio between sky area where the supernovae are being simulated and
-        accepting the default `None` for `fieldArea`
     """
 
     def __init__(self,
@@ -251,7 +233,24 @@ following properties:
                  skyFraction=None,
                  cosmo=Planck15):
         """
-        docstring in the class description
+        Parameters
+        ----------
+        rng : instance of `np.random.RandomState`
+        cosmo : Instance of `astropy.cosmology` class, optional, defaults to Planck15
+            data structure specifying the cosmological parameters 
+        alpha : float, optional, defaults to 2.6e-5
+            constant amplitude in SN rate powerlaw
+        beta : float, optional, defaults to 1.5
+            constant exponent in SN rate powerlaw
+        surveyDuration : float, units of years, defaults to 10.
+            duration of the survey in units of years
+        fieldArea : float, units of degree sq, defaults to None
+            area of the field over which supernovae are being simulated in
+            units of square degrees.
+        skyFraction : float, optional, defaults to None
+            Alternative way of specifying fieldArea by supplying the unitless
+            ratio between sky area where the supernovae are being simulated and
+            accepting the default `None` for `fieldArea`
         """
         self.alpha = alpha
         self.beta = beta
