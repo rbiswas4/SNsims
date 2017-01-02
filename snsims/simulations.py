@@ -283,17 +283,18 @@ class SimulationTile(Universe):
         dec = - self.positions[1] + 45.0 
         # Why do we need numSN
         sp = SimpleSALTDist(numSN=numSN, rng=self.randomState,
+                            mjdmin=self.minPeakTime,
                             zSamples=self.zsamples).paramSamples
         sp['ra'] = self.positions[0]
         sp['dec'] = self.positions[1]
         sp['snid'] = np.left_shift(self.tileID, 20) + np.arange(numSN)
         sp.set_index('snid', inplace=True)
         self._snParamTable = sp
-        if self.minPeakTime is None or self.maxPeakTime is None:
-            pass
-        else:
-            sp['t0'] = self.minPeakTime + \
-                       (self.maxPeakTime - self.minPeakTime) * sp['t0']
+        # if self.minPeakTime is None or self.maxPeakTime is None:
+        #    pass
+        # else:
+        #    sp['t0'] = self.minPeakTime + \
+        #               (self.maxPeakTime - self.minPeakTime) * sp['t0']
         return sp
     
     @staticmethod
