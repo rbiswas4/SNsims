@@ -9,7 +9,7 @@ A set of classes to provide structure to SN simulations using SNCosmo or LSST si
 - `Healpy` : This is made available through the `lsst_sims` package but can be installed externally as well. 
 
 # Data Products
-- While not necessary in principle, the use of precomputed sets of pointings per tile are useful to save time. Such precomputed pointings are made available as downloadable sqlite databases. For the current baseline `minion_1016`, the recommended data product is currently [available](http://astro.washington.edu/sim_data/hpOpSim/healpixelized_MINION_1016_256_64_indexed_ddfnodith.db.gz') as a link.
+- While not necessary in principle, the use of precomputed sets of pointings per tile are useful to save time. Such precomputed pointings are made available as downloadable sqlite databases. For the current baseline `minion_1016`, the recommended data product is currently [available](http://astro.washington.edu/sim_data/hpOpSim/healpixelized_MINION_1016_256_64_indexed_ddfnodith.db.gz) as a link.
 
 # Contributors
 - R. Biswas
