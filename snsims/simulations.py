@@ -15,6 +15,7 @@ from lsst.sims.catUtils.supernovae import SNObject
 
 __all__ = ['SimulationTile', 'EntireSimulation', 'TiledSimulation']
 
+simBandNameDict = dict((x, 'lsst' + x) for x in 'ugrizy')
 class Photometry(object):
     """
     Temporary class standing in for the Photometry class in AnalyzeSN which is
@@ -376,7 +377,7 @@ class SimulationTile(Universe):
         df['zpsys']= 'ab'
         lc = df[['snid', 'expMJD', 'filter', 'ModelFlux', 'fieldID', 'flux', 'fluxerr',
                  'zp', 'zpsys', 'fieldID']]
-        return LightCurve(lc)
+        return LightCurve(lc, bandNameDict=simBandNameDict)
 
     def writeTile(self, fileName, timeRange='model', paramFileName=None):
         """
