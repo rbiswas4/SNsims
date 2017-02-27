@@ -288,7 +288,7 @@ class SimulationTile(Universe):
                             zSamples=self.zsamples).paramSamples
         sp['ra'] = self.positions[0]
         sp['dec'] = self.positions[1]
-        sp['snid'] = np.left_shift(self.tileID, 20) + np.arange(numSN)
+        sp['snid'] = self.tileID * 500.0 + np.arange(numSN)
         sp.set_index('snid', inplace=True)
         self._snParamTable = sp
         # if self.minPeakTime is None or self.maxPeakTime is None:
