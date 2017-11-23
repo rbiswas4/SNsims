@@ -146,14 +146,14 @@ class EntireSimulation(Universe):
     def modelFlux(self, snid, time, bandpassobject):
         # assert len(times) == len(bands)
         # flux = np.zeros(len(times))
-	sn = self.SN(snid)
-	return self.staticModelFlux(sn, time=time, bandpassobject=bandpassobject)
+        sn = self.SN(snid)
+        return self.staticModelFlux(sn, time=time, bandpassobject=bandpassobject)
         # return self.SN(snid).catsimBandFlux(bandpassobject=bandpassobject,
         #                                    time=time)
 
 
     def writeSNParams(self, paramFileName, IDVal=0):
-	"""
+        """
 	Write the dataframe `self.snParams` to a file 
 
 	Parameters
@@ -200,23 +200,23 @@ class TiledSimulation(EntireSimulation):
 		 rng=None,
                  allPointings=None,
                  timeRange=None):
-	"""
+        """
 	Parameters
 	----------
 	paramDF
 	"""
-	self.tileID = tileID
+        self.tileID = tileID
         self._randomState = rng
-	if self._randomState is None:
-	    self._randomState = np.random.RandomState(self.tileID)
+        if self._randomState is None:
+            self._randomState = np.random.RandomState(self.tileID)
         self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
         self.fieldArea = self.Tiling.area(self.tileID)
         self.columns = ('expMJD', 'filter', 'fieldID', 'fiveSigmaDepth')
         self.tilePointings = self.Tiling.pointingSequenceForTile(self.tileID, 
                                                                  allPointings=allPointings,
                                                                  columns=self.columns)
-	super(TiledSimulation, self).__init__(rng=self._randomState,
-					      pointings=self.tilePointings,
+        super(TiledSimulation, self).__init__(rng=self._randomState,
+                                              pointings=self.tilePointings,
 					      paramsDF=paramDF)
 
 class SimulationTile(Universe):
