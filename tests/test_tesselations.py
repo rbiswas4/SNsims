@@ -2,6 +2,7 @@ import snsims
 import pytest
 
 
+@pytest.mark.skip(reason='not really implemented')
 def test_tesselations_abc():
 
     class NotTile(snsims.Tiling):
