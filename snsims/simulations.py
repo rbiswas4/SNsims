@@ -229,8 +229,10 @@ class SimulationTile(Universe):
                  allPointings=None,
                  timeRange=None,
                  angularUnits='radians'):
-
-        self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
+        if hpOpSim is not None:
+            self.Tiling = HealpixTiles(nside=NSIDE, preComputedMap=hpOpSim)
+        else:
+            self.Tiling = HealpixTiles(nside=NSIDE, opsimdf=allPointings) 
         self.tileID = tileID
         self._randomState = np.random.RandomState(self.tileID)
         self.fieldArea = self.Tiling.area(tileID)
