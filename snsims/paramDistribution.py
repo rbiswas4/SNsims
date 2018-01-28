@@ -136,8 +136,8 @@ class GMM_SALT2Params(SimpleSALTDist):
     def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
                  Mdisp=0.15, rng=None, cosmo=Planck15, mjdmin=0., surveyDuration=10.):
         super(self.__class__, self).__init__(numSN, zSamples, snids=snids, alpha=alpha,
-                              beta=beta, rng=rng, cosmo=Planck15, mjdmin=0.,
-                              surveyDuration=10., Mdisp=0.15)
+                              beta=beta, rng=rng, cosmo=cosmo, mjdmin=mjdmin,
+                              surveyDuration=SurveyDuration., Mdisp=Mdisp)
 
     @property
     def paramSamples(self):
