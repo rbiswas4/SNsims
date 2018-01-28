@@ -132,15 +132,43 @@ class SimpleSALTDist(SALT2Parameters):
 
 class GMM_SALT2Params(SimpleSALTDist):
     """
+    Class to provide SALT2 parameters for a cosmological distribution of SN
+    based on the function provided by David Rubin.
+
+    Parameters
+    ----------
+    numSN : int, or None
+        Number of SN in sample.  If `None`, calculated from zSamples
+    zSamples : sequence of floats
+        samples of redshift
+    snids : sequence of ints, defaults to None
+        if None, an integer sequence from 0 is used.
+    alpha : float, defaults to 0.11
+        Tripp parameter alpha
+    beta : float, defaults to 3.14
+        Tripp parameter beta
+    Mdisp : float, defaults to 0.15
+        intrinsic dispersion assumed to be only in luminosity
+    rng : instance of `np.random.RandomState`
+    cosmo : instance of `astropy.Cosmology`, defaults to PLANCK15
+        specifies the cosmological parameters
+    mjdmin : float, defaults to 59580. 
+        start of the survey
+    surveyDuration: Float, defaults to 10.
+        duration of the survey in years
     """
     def __init__(self, numSN, zSamples, snids=None, alpha=0.11, beta=3.14,
-                 Mdisp=0.15, rng=None, cosmo=Planck15, mjdmin=0., surveyDuration=10.):
+                 Mdisp=0.15, rng=None, cosmo=Planck15, mjdmin=59580, surveyDuration=10.):
         super(self.__class__, self).__init__(numSN, zSamples, snids=snids, alpha=alpha,
                               beta=beta, rng=rng, cosmo=cosmo, mjdmin=mjdmin,
                               surveyDuration=SurveyDuration, Mdisp=Mdisp)
 
     @property
     def paramSamples(self):
+        """ rewrite the paramSamples property with Gaussian Mixture Models. This
+        is a dataframe with the required information.
+        """
+
         if self._paramSamples is not None:
             return self._paramSamples
         timescale = self.mjdmax - self.mjdmin
@@ -155,7 +183,8 @@ class GMM_SALT2Params(SimpleSALTDist):
             model.set(z=z, x1=x1[i], c=c[i])
             model.source.set_peakmag(mB[i], 'bessellB', 'ab')
             x0[i] = model.get('x0')
-        df = pd.DataFrame(dict(x0=x0, x1=x1, c=c, mB=mB, z=self.zSamples))
+        df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1vals, c=cvals, M=M, Mabs=Mabs,
+                               t0=T0Vals, z=self.zSamples, snid=self.snids))
         self._paramSamples = df
         return self._paramSamples
 
