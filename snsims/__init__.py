@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from .version import __VERSION__
+from .version import __VERSION__ as __version__
 # Tilings
 from opsimsummary import Tiling, HealpixTiles
 # Universe and Rules
