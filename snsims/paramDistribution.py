@@ -181,9 +181,13 @@ class GMM_SALT2Params(SimpleSALTDist):
         model = sncosmo.Model(source='SALT2')
         for i, z in enumerate(self.zSamples):
             model.set(z=z, x1=x1[i], c=c[i])
+            model.set_source_peakabsmag(mB[i], 'bessellB', 'ab',
+                                        cosmo=self.cosmo)
+            x0[i] = model.get('x0')
+            # mB[i] = model.source.peakmag('bessellB', 'ab')
             model.source.set_peakmag(mB[i], 'bessellB', 'ab')
             x0[i] = model.get('x0')
-        df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1vals, c=cvals, M=M, Mabs=Mabs,
+        df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1, c=c,
                                t0=T0Vals, z=self.zSamples, snid=self.snids))
         self._paramSamples = df
         return self._paramSamples
