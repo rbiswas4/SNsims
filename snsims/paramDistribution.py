@@ -115,6 +115,7 @@ class SimpleSALTDist(SALT2Parameters):
             M = - self.alpha * x1vals - self.beta * cvals
             Mabs = self.centralMabs + M + self.randomState.normal(loc=0., scale=self.Mdisp,
                                                size=self.numSN)
+            print('The range of Mabs', Mabs.min(), Mabs.max())
             x0 = np.zeros(self.numSN)
             mB = np.zeros(self.numSN)
             model = sncosmo.Model(source='SALT2')
@@ -175,18 +176,21 @@ class GMM_SALT2Params(SimpleSALTDist):
         T0Vals = self.randomState.uniform(size=self.numSN) * timescale \
             + self.mjdmin
         mB, x1, c, m = SALT2_MMDist(self.numSN)
+        print("range of sampled mB", mB.min(), mB.max())
         x0 = np.zeros(len(mB))
         mB += self.randomState.normal(loc=0., scale=self.Mdisp,
                                       size=self.numSN)
+        H70cosmo = self.cosmo.clone(name='H70cosmo',
+                                    H0=self.cosmo.H0 * (70/self.cosmo.H0.value))
+        MB = mB + H70cosmo.distmod(self.zSamples).value - \
+            self.cosmo.distmod(self.zSamples).value
         model = sncosmo.Model(source='SALT2')
         for i, z in enumerate(self.zSamples):
             model.set(z=z, x1=x1[i], c=c[i])
-            model.set_source_peakabsmag(mB[i], 'bessellB', 'ab',
+            model.set_source_peakabsmag(MB[i], 'bessellB', 'ab',
                                         cosmo=self.cosmo)
-            # x0[i] = model.get('x0')
-            # mB[i] = model.source.peakmag('bessellB', 'ab')
-            # model.source.set_peakmag(mB[i], 'bessellB', 'ab')
             x0[i] = model.get('x0')
+            mB[i] = model.source.peakmag('bessellB', 'ab')
         df = pd.DataFrame(dict(x0=x0, mB=mB, x1=x1, c=c,
                                t0=T0Vals, z=self.zSamples, snid=self.snids))
         self._paramSamples = df
